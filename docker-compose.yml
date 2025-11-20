@@ -10,7 +10,7 @@ services:
       - "${APP_PORT:-8080}:${SERVER_PORT:-8080}"  # Configurable host:container port
     environment:
       - SERVER_PORT=${SERVER_PORT:-8080}  # Use external variable or default to 8080
-      - MODEL_HOST=http://model-service:${MODEL_PORT:-8081}  # Dynamic model service port
+      - MODEL_HOST=http://model-service:${MODEL_SERVICE_PORT:-8081}  # Dynamic model service port
     depends_on:
       - model-service
     networks:
