@@ -1,12 +1,18 @@
+version: '3.8'
+
+# APP_PORT=9090 SERVER_PORT=8083 MODEL_PORT=9091 MODEL_SERVICE_PORT=9093 docker-compose up
+# Uses:
+# - Host: 9090 → Container: 8083 (app)
+# - Host: 9091 → Container: 9093 (model)
 services:
   app-service:
     image: ghcr.io/doda2025-team17/app:latest
     container_name: app-service
     ports:
-      - "8080:8080"
+      - "${APP_PORT:-8080}:${SERVER_PORT:-8080}"  # Configurable host:container port
     environment:
-      - SERVER_PORT=8080
-      - MODEL_HOST=http://model-service:8081
+      - SERVER_PORT=${SERVER_PORT:-8080}  # Use external variable or default to 8080
+      - MODEL_HOST=http://model-service:${MODEL_PORT:-8081}  # Dynamic model service port
     depends_on:
       - model-service
     networks:
@@ -16,9 +22,9 @@ services:
     image: ghcr.io/doda2025-team17/model-service:latest
     container_name: model-service
     ports:
-      - "8081:8081"
+      - "${MODEL_PORT:-8081}:${MODEL_SERVICE_PORT:-8081}"  # Configurable host:container port
     environment:
-      - SERVER_PORT=8081
+      - PORT=${MODEL_SERVICE_PORT:-8081}  # Use external variable or default to 8081
     volumes:
       - model-data:/app/output
     networks:
