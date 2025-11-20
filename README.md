@@ -4,12 +4,12 @@ This organization contains a machine learning-based SMS spam detection system wi
 
 ## Architecture Overview
 
-This system has four repositories:
+This system has four repositories, found at these links:
 
-- **app**: Spring Boot web application as the frontend and acting as an API gateway
-- **model-service**: Python-based machine learning service for spam detection
-- **lib-version**: Version utility library (used by app-service)
-- **operation**: Main deployment and orchestration repository with documentation
+- **app** (link): Spring Boot web application as the frontend and acting as an API gateway
+- **model-service** (link): Python-based machine learning service for spam detection
+- **lib-version** (link): Version utility library (used by app)
+- **operation** (link): Main deployment and orchestration repository with documentation
 
 ## Quick Start
 ### Prerequisites
@@ -53,11 +53,7 @@ This system has four repositories:
 1. **app**: Host has port `8080`. The container also has port `8080`.
 2. **model-service**: Host has port `8081`. The container also has port `8081`.
 
+## Assignments
 
-## Repository Links
-Links to the latest tag releases for each repository:
-
-1. **app**: 
-2. **model-service**:
-3. **lib-version**:
-4. **operation**:
+### Assignment 1
+For Assignment 1, we have implemented ... . More information on ... can be found at ... .

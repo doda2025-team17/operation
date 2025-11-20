@@ -1,8 +1,8 @@
 # Activity Overview
-## Week Q1.1 (Nov. 10 - 16)
+## Week Q1.1 (Nov. 10 - 14)
 No work
 
-## Week Q4.2 (Nov. 17 - 23)
+## Week Q4.2 (Nov. 15 - 21)
 ### Rebecca
 
 ### Arnav
@@ -15,7 +15,7 @@ No work
 
 ### Nicholas
 
-## Week Q4.3 (Nov. 24 - 30)
+## Week Q4.3 (Nov. 21 - 27)
 ### Rebecca
 
 ### Arnav
@@ -28,7 +28,7 @@ No work
 
 ### Nicholas
 
-## Week Q4.4 (Dec. 1 - 7)
+## Week Q4.4 (Nov. 28 - Dec. 4)
 ### Rebecca
 
 ### Arnav
@@ -41,7 +41,7 @@ No work
 
 ### Nicholas
 
-## Week Q4.5 (Dec. 8 - 14)
+## Week Q4.5 (Dec. 4 - 10)
 ### Rebecca
 
 ### Arnav
@@ -54,7 +54,7 @@ No work
 
 ### Nicholas
 
-## Week Q4.6 (Dec. 15 - 21)
+## Week Q4.6 (Dec. 11 - 17)
 ### Rebecca
 
 ### Arnav
