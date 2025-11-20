@@ -1,4 +1,4 @@
-# APP_PORT=9090 SERVER_PORT=8083 MODEL_PORT=9091 MODEL_SERVICE_PORT=9093 docker-compose up
+# APP_PORT=9090 APP_SERVER_PORT=8083 MODEL_PORT=9091 MODEL_SERVICE_PORT=9093 docker-compose up
 # Uses:
 # - Host: 9090 → Container: 8083 (app)
 # - Host: 9091 → Container: 9093 (model)
@@ -9,7 +9,7 @@ services:
     ports:
       - "${APP_PORT:-8080}:${SERVER_PORT:-8080}"  # Configurable host:container port
     environment:
-      - SERVER_PORT=${SERVER_PORT:-8080}  # Use external variable or default to 8080
+      - APP_SERVER_PORT=${APP_SERVER_PORT:-8080}  # Use external variable or default to 8080
       - MODEL_HOST=http://model-service:${MODEL_SERVICE_PORT:-8081}  # Dynamic model service port
     depends_on:
       - model-service
@@ -22,7 +22,7 @@ services:
     ports:
       - "${MODEL_PORT:-8081}:${MODEL_SERVICE_PORT:-8081}"  # Configurable host:container port
     environment:
-      - PORT=${MODEL_SERVICE_PORT:-8081}  # Use external variable or default to 8081
+      - MODEL_SERVICE_PORT=${MODEL_SERVICE_PORT:-8081}  # Use external variable or default to 8081
     volumes:
       - model-data:/app/output
     networks:
