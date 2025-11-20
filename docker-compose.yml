@@ -1,6 +1,4 @@
-version: '3.8'
-
-# APP_PORT=9090 SERVER_PORT=8083 MODEL_PORT=9091 MODEL_SERVICE_PORT=9093 docker-compose up
+# docker-compose up APP_PORT=9090 SERVER_PORT=8083 MODEL_PORT=9091 MODEL_SERVICE_PORT=9093 
 # Uses:
 # - Host: 9090 → Container: 8083 (app)
 # - Host: 9091 → Container: 9093 (model)
