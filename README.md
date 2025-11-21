@@ -36,7 +36,7 @@ This system has four repositories, found at these links:
 3. **Access the Application**:
    Access the Web Application at: http://localhost:8080/
 
-   Access the Model Service API at: http://model-service:8081/
+   Access the Model Service API at: http://localhost:8081/apidocs/
 
 4. **Stop the Services**:
    ```
