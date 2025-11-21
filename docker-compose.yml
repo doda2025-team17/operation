@@ -5,8 +5,8 @@ services:
     ports:
       - "${APP_HOST_PORT}:${APP_CONTAINER_PORT}"
     environment:
-      - SERVER_PORT=${APP_CONTAINER_PORT}
-      - MODEL_SERVICE_URL=http://model-service:${MODEL_CONTAINER_PORT}
+      - APP_SERVER_PORT=${APP_CONTAINER_PORT}
+      - MODEL_HOST=http://model-service:${MODEL_CONTAINER_PORT}
     depends_on:
       - model-service
     networks:
@@ -18,7 +18,7 @@ services:
     ports:
       - "${MODEL_HOST_PORT}:${MODEL_CONTAINER_PORT}"
     environment:
-      - PORT=${MODEL_CONTAINER_PORT}
+      - MODEL_SERVICE_PORT=${MODEL_CONTAINER_PORT}
       - MODEL_URL=${MODEL_URL}
     volumes:
       - model-data:/models
