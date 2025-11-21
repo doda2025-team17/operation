@@ -6,10 +6,10 @@ This organization contains a machine learning-based SMS spam detection system wi
 
 This system has four repositories, found at these links:
 
-- **app** (link): Spring Boot web application as the frontend and acting as an API gateway
-- **model-service** (link): Python-based machine learning service for spam detection
-- **lib-version** (link): Version utility library (used by app)
-- **operation** (link): Main deployment and orchestration repository with documentation
+- **app** (https://github.com/doda2025-team17/app/releases/tag/v1.0.0): Spring Boot web application as the frontend and acting as an API gateway
+- **model-service** (https://github.com/doda2025-team17/model-service/releases/tag/v1.0.0): Python-based machine learning service for spam detection
+- **lib-version** (https://github.com/doda2025-team17/lib-version/releases/tag/v1.0.0): Version utility library (used by app)
+- **operation** (https://github.com/doda2025-team17/operation/releases/tag/V1.0.0): Main deployment and orchestration repository with documentation
 
 ## Quick Start
 
@@ -64,5 +64,5 @@ This system has four repositories, found at these links:
 ## Assignments
 
 ### Assignment 1
-
-For Assignment 1, we have implemented ... . More information on ... can be found at ... .
+For Assignment 1, we have extended the application of the SMS spam detection system with multi-architecture Docker images, a Maven library with version-aware utilities, automated CI/CD workflows, and flexible Docker Compose orchestration.
+ More information on the containerized services can be found at the [app repository](https://github.com/doda2025-team17/app) and [model-service repository](https://github.com/doda2025-team17/model-service), and details about the version-aware Maven library can be found at the [lib-version repository](https://github.com/doda2025-team17/lib-version).
