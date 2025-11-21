@@ -56,4 +56,5 @@ This system has four repositories, found at these links:
 ## Assignments
 
 ### Assignment 1
-For Assignment 1, we have implemented ... . More information on ... can be found at ... .
+For Assignment 1, we have extended the application of the SMS spam detection system with multi-architecture Docker images, a Maven library with version-aware utilities, automated CI/CD workflows, and flexible Docker Compose orchestration.
+ More information on the containerized services can be found at the [app repository](https://github.com/doda2025-team17/app) and [model-service repository](https://github.com/doda2025-team17/model-service), and details about the version-aware Maven library can be found at the [lib-version repository](https://github.com/doda2025-team17/lib-version).
