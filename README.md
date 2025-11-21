@@ -6,9 +6,9 @@ This organization contains a machine learning-based SMS spam detection system wi
 
 This system has four repositories, found at these links:
 
-- **app** (link): Spring Boot web application as the frontend and acting as an API gateway
-- **model-service** (link): Python-based machine learning service for spam detection
-- **lib-version** (link): Version utility library (used by app)
+- **app** (https://github.com/doda2025-team17/app/releases/tag/v1.0.0): Spring Boot web application as the frontend and acting as an API gateway
+- **model-service** (https://github.com/doda2025-team17/model-service/releases/tag/v0.0.1): Python-based machine learning service for spam detection
+- **lib-version** (https://github.com/doda2025-team17/lib-version/releases/tag/v1.0.0): Version utility library (used by app)
 - **operation** (link): Main deployment and orchestration repository with documentation
 
 ## Quick Start
