@@ -1,0 +1,56 @@
+---
+# General setup for all nodes
+- name: General node setup
+  hosts: all
+  become: yes
+  vars:
+    keys: "{{ lookup('fileglob', 'ssh-keys/*.pub', wantlist=True) }}"
+  tasks:
+    # Step 3: Basic system setup
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install basic packages
+      apt:
+        name:
+          - curl
+          - vim
+          - net-tools
+        state: present
+
+    # Step 4: Register SSH keys
+    - name: Add team SSH keys
+      authorized_key:
+        user: vagrant
+        state: present
+        key: "{{ lookup('file', item) }}"
+      loop: "{{ keys }}"
+
+    # Step 5: Disable SWAP
+    - name: Disable swap at runtime
+      shell: swapoff -a
+
+    - name: Remove swap from /etc/fstab
+      lineinfile:
+        path: /etc/fstab
+        regexp: '^\s*[^#].*swap'
+        state: absent
+
+    # Step 6: Load br_netfilter module
+    - name: Create modules-load config for Kubernetes
+      copy:
+        dest: /etc/modules-load.d/k8s.conf
+        content: |
+          overlay
+          br_netfilter
+
+    - name: Load br_netfilter module
+      modprobe:
+        name: br_netfilter
+        state: present
+
+    - name: Load overlay module
+      modprobe:
+        name: overlay
+        state: present

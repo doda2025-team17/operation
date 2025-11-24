@@ -1,0 +1,5 @@
+---
+# Control plane specific setup
+- name: Control plane setup
+  hosts: all
+  tasks: []

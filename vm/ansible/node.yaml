@@ -1,0 +1,5 @@
+---
+# Worker node specific setup
+- name: Worker node setup
+  hosts: all
+  tasks: []
