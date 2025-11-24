@@ -19,6 +19,7 @@
         --apiserver-advertise-address={{ node_ip }}
         --pod-network-cidr=10.244.0.0/16
         --node-name=ctrl
+        --ignore-preflight-errors=NumCPU,Swap
       when: not kubeadm_init.stat.exists
 
     - name: Create .kube directory for vagrant user

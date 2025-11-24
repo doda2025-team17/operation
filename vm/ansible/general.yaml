@@ -8,14 +8,27 @@
       apt:
         update_cache: yes
 
-    - name: Install required packages
+    - name: Install required system packages
       apt:
         name:
           - apt-transport-https
           - ca-certificates
           - curl
           - gnupg
+          - conntrack
+          - ipset
+          - iptables
         state: present
+
+    # Step 5: Disable SWAP properly
+    - name: Disable swap at runtime
+      shell: swapoff -a
+
+    - name: Remove swap from /etc/fstab
+      lineinfile:
+        path: /etc/fstab
+        regexp: '^[^#].*swap'
+        state: absent
 
     - name: Load kernel modules
       modprobe:
@@ -63,7 +76,7 @@
         path: /etc/containerd/config.toml
         regexp: '^\s*SystemdCgroup\s*='
         line: "            SystemdCgroup = true"
-        insertafter: '^\s*\[plugins."io.containerd.grpc.v1.cri".containerd.runtimes.runc.options\]'
+        insertafter: '^\s*\[plugins\."io\.containerd\.grpc\.v1\.cri"\.containerd\.runtimes\.runc\.options\]'
 
     - name: Restart containerd
       systemd:
