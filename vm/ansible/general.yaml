@@ -1,130 +1,56 @@
 ---
-# General setup for all Kubernetes nodes
-- name: General Kubernetes node setup
+# General setup for all nodes
+- name: General node setup
   hosts: all
   become: yes
+  vars:
+    keys: "{{ lookup('fileglob', 'ssh-keys/*.pub', wantlist=True) }}"
   tasks:
+    # Step 3: Basic system setup
     - name: Update apt cache
       apt:
         update_cache: yes
 
-    - name: Install required system packages
+    - name: Install basic packages
       apt:
         name:
-          - apt-transport-https
-          - ca-certificates
           - curl
-          - gnupg
-          - conntrack
-          - ipset
-          - iptables
+          - vim
+          - net-tools
         state: present
 
-    # Step 5: Disable SWAP properly
+    # Step 4: Register SSH keys
+    - name: Add team SSH keys
+      authorized_key:
+        user: vagrant
+        state: present
+        key: "{{ lookup('file', item) }}"
+      loop: "{{ keys }}"
+
+    # Step 5: Disable SWAP
     - name: Disable swap at runtime
       shell: swapoff -a
 
     - name: Remove swap from /etc/fstab
       lineinfile:
         path: /etc/fstab
-        regexp: '^[^#].*swap'
+        regexp: '^\s*[^#].*swap'
         state: absent
 
-    - name: Load kernel modules
-      modprobe:
-        name: "{{ item }}"
-        state: present
-      loop:
-        - overlay
-        - br_netfilter
-
-    - name: Make kernel modules persistent
+    # Step 6: Load br_netfilter module
+    - name: Create modules-load config for Kubernetes
       copy:
         dest: /etc/modules-load.d/k8s.conf
         content: |
           overlay
           br_netfilter
 
-    - name: Set sysctl parameters for Kubernetes
-      sysctl:
-        name: "{{ item.name }}"
-        value: "{{ item.value }}"
-        state: present
-        sysctl_set: yes
-      loop:
-        - { name: "net.bridge.bridge-nf-call-iptables", value: "1" }
-        - { name: "net.bridge.bridge-nf-call-ip6tables", value: "1" }
-        - { name: "net.ipv4.ip_forward", value: "1" }
-
-    - name: Install containerd
-      apt:
-        name: containerd
+    - name: Load br_netfilter module
+      modprobe:
+        name: br_netfilter
         state: present
 
-    - name: Create containerd configuration directory
-      file:
-        path: /etc/containerd
-        state: directory
-
-    - name: Generate default containerd configuration
-      shell: containerd config default > /etc/containerd/config.toml
-      args:
-        creates: /etc/containerd/config.toml
-
-    - name: Configure containerd to use systemd cgroup driver
-      lineinfile:
-        path: /etc/containerd/config.toml
-        regexp: '^\s*SystemdCgroup\s*='
-        line: "            SystemdCgroup = true"
-        insertafter: '^\s*\[plugins\."io\.containerd\.grpc\.v1\.cri"\.containerd\.runtimes\.runc\.options\]'
-
-    - name: Restart containerd
-      systemd:
-        name: containerd
-        state: restarted
-        enabled: yes
-
-    - name: Add Kubernetes apt key
-      apt_key:
-        url: https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key
-        keyring: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    - name: Load overlay module
+      modprobe:
+        name: overlay
         state: present
-
-    - name: Add Kubernetes apt repository
-      apt_repository:
-        repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /"
-        state: present
-        filename: kubernetes
-
-    - name: Install Kubernetes packages
-      apt:
-        name:
-          - kubelet
-          - kubeadm
-          - kubectl
-        state: present
-        update_cache: yes
-
-    - name: Hold Kubernetes packages at current version
-      dpkg_selections:
-        name: "{{ item }}"
-        selection: hold
-      loop:
-        - kubelet
-        - kubeadm
-        - kubectl
-
-    - name: Get node IP from eth1 interface
-      set_fact:
-        node_ip: "{{ ansible_eth1.ipv4.address }}"
-
-    - name: Configure node IP for kubelet
-      lineinfile:
-        path: /etc/default/kubelet
-        line: "KUBELET_EXTRA_ARGS=--node-ip={{ node_ip }}"
-        create: yes
-
-    - name: Enable kubelet service
-      systemd:
-        name: kubelet
-        enabled: yes
