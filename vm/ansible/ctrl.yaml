@@ -1,0 +1,58 @@
+---
+# Control plane setup
+- name: Initialize Kubernetes control plane
+  hosts: all
+  become: yes
+  tasks:
+    - name: Get control plane IP from eth1 interface
+      set_fact:
+        node_ip: "{{ ansible_eth1.ipv4.address }}"
+
+    - name: Check if Kubernetes is already initialized
+      stat:
+        path: /etc/kubernetes/admin.conf
+      register: kubeadm_init
+
+    - name: Initialize Kubernetes cluster
+      command: >
+        kubeadm init
+        --apiserver-advertise-address={{ node_ip }}
+        --pod-network-cidr=10.244.0.0/16
+        --node-name=ctrl
+      when: not kubeadm_init.stat.exists
+
+    - name: Create .kube directory for vagrant user
+      file:
+        path: /home/vagrant/.kube
+        state: directory
+        owner: vagrant
+        group: vagrant
+        mode: "0755"
+
+    - name: Copy admin.conf to vagrant user's kube config
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /home/vagrant/.kube/config
+        remote_src: yes
+        owner: vagrant
+        group: vagrant
+        mode: "0644"
+
+    - name: Install Flannel CNI plugin
+      become_user: vagrant
+      command: kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      when: not kubeadm_init.stat.exists
+
+    - name: Generate join command
+      command: kubeadm token create --print-join-command
+      register: join_command_output
+
+    - name: Save join command to file
+      copy:
+        content: "{{ join_command_output.stdout }}"
+        dest: /vagrant/join-command.sh
+        mode: "0755"
+      delegate_to: localhost
+      become: no
