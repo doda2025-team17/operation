@@ -115,3 +115,57 @@
         state: present
         allow_downgrade: yes
         force: yes
+
+    # Step 11: Configure containerd for Kubernetes compatibility
+    - name: Create containerd configuration directory
+      file:
+        path: /etc/containerd
+        state: directory
+        mode: '0755'
+
+    - name: Generate default containerd configuration if missing
+      command: containerd config default
+      register: containerd_default_config
+      changed_when: false
+      failed_when: false
+
+    - name: Write default containerd configuration to file
+      copy:
+        content: "{{ containerd_default_config.stdout }}"
+        dest: /etc/containerd/config.toml
+        mode: '0644'
+      when: containerd_default_config.stdout != ""
+
+    - name: Update containerd AppArmor setting
+      replace:
+        path: /etc/containerd/config.toml
+        regexp: '^(\s*)disable_apparmor\s*=\s*false'
+        replace: '    disable_apparmor = true'
+        backup: yes
+
+    - name: Configure containerd sandbox image
+      replace:
+        path: /etc/containerd/config.toml
+        regexp: '^(\s*)sandbox_image\s*=\s*".*"'
+        replace: '    sandbox_image = "registry.k8s.io/pause:3.10"'
+        backup: yes
+
+    - name: Set SystemdCgroup option in containerd
+      replace:
+        path: /etc/containerd/config.toml
+        regexp: '^(\s*)SystemdCgroup\s*=\s*false'
+        replace: '            SystemdCgroup = true'
+        backup: yes
+
+    - name: Apply containerd configuration changes
+      service:
+        name: containerd
+        state: restarted
+
+    # Step 12: Enable and start kubelet service
+    - name: Ensure kubelet service is enabled and running
+      systemd:
+        name: kubelet
+        state: started
+        enabled: yes
+        daemon_reload: yes
