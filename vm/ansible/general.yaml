@@ -6,16 +6,15 @@
     keys: "{{ lookup('fileglob', 'ssh-keys/*.pub', wantlist=True) }}"
   tasks:
     # Step 3: Basic system setup
-    - name: Update apt cache
-      apt:
-        update_cache: yes
-
-    - name: Install basic packages
+    - name: Update apt cache and install basic packages
       apt:
         name:
           - curl
           - vim
           - net-tools
+          - gnupg
+          - lsb-release
+        update_cache: yes
         state: present
 
     # Step 4: Register SSH keys
@@ -29,6 +28,7 @@
     # Step 5: Disable SWAP
     - name: Disable swap at runtime
       shell: swapoff -a
+      changed_when: false  # Makes it more idempotent
 
     - name: Remove swap from /etc/fstab
       lineinfile:
@@ -86,3 +86,32 @@
         mode: '0644'
       vars:
         num_workers: "{{ num_workers | default(2) }}"
+
+    # Step 9: Add Kubernetes repository
+    - name: Add Kubernetes GPG key
+      apt_key:
+        url: https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key
+        state: present
+
+    - name: Add Kubernetes repository
+      apt_repository:
+        repo: "deb https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /"
+        state: present
+        filename: kubernetes
+
+    - name: Update apt cache for Kubernetes packages
+      apt:
+        update_cache: yes
+
+    # Step 10: Install Kubernetes tools
+    - name: Install Kubernetes container runtime and tools
+      apt:
+        name:
+          - "containerd=1.7.24-*"
+          - "runc=1.1.12-*"
+          - "kubelet=1.32.4-*"
+          - "kubeadm=1.32.4-*"
+          - "kubectl=1.32.4-*"
+        state: present
+        allow_downgrade: yes
+        force: yes
