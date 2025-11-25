@@ -1,4 +1,3 @@
----
 # General setup for all nodes
 - name: General node setup
   hosts: all
@@ -54,3 +53,36 @@
       modprobe:
         name: overlay
         state: present
+
+    # Step 7: Enable IPv4 forwarding and bridge settings
+    - name: Enable IPv4 forwarding
+      sysctl:
+        name: net.ipv4.ip_forward
+        value: '1'
+        state: present
+        reload: yes
+
+    - name: Enable bridge netfilter for iptables
+      sysctl:
+        name: net.bridge.bridge-nf-call-iptables
+        value: '1'
+        state: present
+        reload: yes
+
+    - name: Enable bridge netfilter for ip6tables
+      sysctl:
+        name: net.bridge.bridge-nf-call-ip6tables
+        value: '1'
+        state: present
+        reload: yes
+
+    # Step 8: Manage /etc/hosts with dynamic generation
+    - name: Create dynamic hosts file
+      template:
+        src: hosts.j2
+        dest: /etc/hosts
+        owner: root
+        group: root
+        mode: '0644'
+      vars:
+        num_workers: "{{ num_workers | default(2) }}"
