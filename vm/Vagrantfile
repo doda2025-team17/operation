@@ -7,6 +7,7 @@ NUM_WORKERS = 2
 Vagrant.configure("2") do |config|
   # Base box for all VMs
   config.vm.box = "bento/ubuntu-24.04"
+  config.vm.boot_timeout = 300  # 5 minutes for initial boot
 
   # Control Node Configuration
   config.vm.define "ctrl" do |ctrl|
@@ -26,7 +27,10 @@ Vagrant.configure("2") do |config|
     # Common provisioning first
     ctrl.vm.provision "ansible_local" do |ansible|
       ansible.playbook = "ansible/general.yaml"
-      ansible.extra_vars = { hostname: "ctrl" }
+      ansible.extra_vars = { 
+        hostname: "ctrl",
+        num_workers: NUM_WORKERS
+      }
     end
     
     # Then control-specific provisioning
@@ -54,7 +58,10 @@ Vagrant.configure("2") do |config|
       # Common provisioning first
       node.vm.provision "ansible_local" do |ansible|
         ansible.playbook = "ansible/general.yaml"
-        ansible.extra_vars = { hostname: "node-#{i}" }
+        ansible.extra_vars = { 
+          hostname: "node-#{i}",
+          num_workers: NUM_WORKERS
+        }
       end
       
       # Then node-specific provisioning
@@ -63,18 +70,4 @@ Vagrant.configure("2") do |config|
       end
     end
   end
-
-  # Common shell provisioning for all VMs (runs before Ansible)
-  config.vm.provision "shell", inline: <<-SHELL
-    # Add hosts entries for hostname resolution
-    echo "192.168.56.100 ctrl" >> /etc/hosts
-    grep -q "192.168.56.100 ctrl" /etc/hosts || echo "192.168.56.100 ctrl" >> /etc/hosts
-    for i in $(seq 1 #{NUM_WORKERS}); do
-      echo "192.168.56.$((100 + i)) node-$i" >> /etc/hosts
-      grep -q "192.168.56.$((100 + i)) node-$i" /etc/hosts || echo "192.168.56.$((100 + i)) node-$i" >> /etc/hosts
-    done
-    
-    echo "Base provisioning complete"
-    echo "Hostname resolution configured"
-  SHELL
 end
