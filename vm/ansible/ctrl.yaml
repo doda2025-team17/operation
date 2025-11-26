@@ -43,6 +43,16 @@
         remote_src: yes
       when: kubeadmin_conf_after.stat.exists
 
+    - name: Copy kubeconfig to shared folder for host access
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /vagrant/kubeconfig
+        owner: vagrant
+        group: vagrant
+        mode: '0600'
+        remote_src: yes
+      when: kubeadmin_conf_after.stat.exists
+
     - name: Check if flannel CNI config already exists
       stat:
         path: /etc/cni/net.d/10-flannel.conflist
