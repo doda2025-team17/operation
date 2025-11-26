@@ -2,4 +2,58 @@
 # Control plane specific setup
 - name: Control plane setup
   hosts: all
-  tasks: []
+  become: yes
+  tasks:
+    - name: Check if cluster is already initialized
+      stat:
+        path: /etc/kubernetes/admin.conf
+      register: kubeadmin_conf
+
+    - name: Initialize Kubernetes control plane with kubeadm
+      command: >
+        kubeadm init
+        --apiserver-advertise-address=192.168.56.100
+        --node-name ctrl
+        --pod-network-cidr=10.244.0.0/16
+        --ignore-preflight-errors=NumCPU
+      when: not kubeadmin_conf.stat.exists
+      register: kubeadm_init
+
+    - name: Re-check admin.conf after kubeadm init
+      stat:
+        path: /etc/kubernetes/admin.conf
+      register: kubeadmin_conf_after
+
+    - name: Ensure .kube directory exists for vagrant user
+      file:
+        path: /home/vagrant/.kube
+        state: directory
+        owner: vagrant
+        group: vagrant
+        mode: '0700'
+      when: kubeadmin_conf_after.stat.exists
+
+    - name: Configure kubectl for vagrant user
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /home/vagrant/.kube/config
+        owner: vagrant
+        group: vagrant
+        mode: '0600'
+        remote_src: yes
+      when: kubeadmin_conf_after.stat.exists
+
+    - name: Check if flannel CNI config already exists
+      stat:
+        path: /etc/cni/net.d/10-flannel.conflist
+      register: flannel_cni
+
+    - name: Install flannel CNI network plugin
+      command: >
+        kubectl apply -f
+        https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      when:
+        - kubeadmin_conf_after.stat.exists
+        - not flannel_cni.stat.exists
