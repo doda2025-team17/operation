@@ -58,12 +58,35 @@
         path: /etc/cni/net.d/10-flannel.conflist
       register: flannel_cni
 
-    - name: Install flannel CNI network plugin
+    - name: Install flannel CNI network plugin (v0.26.7)
       command: >
         kubectl apply -f
-        https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+        https://raw.githubusercontent.com/flannel-io/flannel/v0.26.7/Documentation/kube-flannel.yml
       environment:
         KUBECONFIG: /etc/kubernetes/admin.conf
       when:
         - kubeadmin_conf_after.stat.exists
         - not flannel_cni.stat.exists
+
+    - name: Check current flannel DaemonSet args
+      command: >
+        kubectl -n kube-flannel get daemonset kube-flannel-ds
+        -o jsonpath={.spec.template.spec.containers[0].args}
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      register: flannel_args
+      failed_when: false
+      changed_when: false
+      when: kubeadmin_conf_after.stat.exists
+
+    - name: Configure flannel to use host-only interface eth1
+      command: >
+        kubectl -n kube-flannel patch daemonset kube-flannel-ds
+        --type=json
+        -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--iface=eth1"}]'
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      when:
+        - kubeadmin_conf_after.stat.exists
+        - flannel_args.stdout is defined
+        - "'--iface=eth1' not in flannel_args.stdout"
