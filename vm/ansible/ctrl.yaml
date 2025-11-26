@@ -43,6 +43,58 @@
         remote_src: yes
       when: kubeadmin_conf_after.stat.exists
 
+    # Step 16: Install Helm CLI via Apt
+    - name: Install Helm apt prerequisites
+      apt:
+        name:
+          - curl
+          - gpg
+          - apt-transport-https
+        state: present
+        update_cache: yes
+
+    - name: Download Helm GPG key
+      get_url:
+        url: https://packages.buildkite.com/helm-linux/helm-debian/gpgkey
+        dest: /tmp/helm.gpgkey
+        mode: '0644'
+
+    - name: Convert Helm GPG key to keyring format
+      command:
+        argv:
+          - gpg
+          - --batch
+          - --yes
+          - --dearmor
+          - --output
+          - /usr/share/keyrings/helm.gpg
+          - /tmp/helm.gpgkey
+
+    - name: Add Helm apt repository
+      apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/helm.gpg] https://packages.buildkite.com/helm-linux/helm-debian/any/ any main"
+        state: present
+        filename: helm-stable-debian
+
+    - name: Install Helm
+      apt:
+        name: helm
+        state: present
+        update_cache: yes
+
+    # Step 17: Install Helm diff plugin 
+    - name: Check if helm diff plugin is installed
+      become_user: vagrant
+      command: helm plugin list
+      register: helm_plugins
+      changed_when: false
+      failed_when: false
+
+    - name: Install helm-diff plugin
+      become_user: vagrant
+      command: helm plugin install https://github.com/databus23/helm-diff
+      when: "'diff' not in helm_plugins.stdout"
+
     - name: Copy kubeconfig to shared folder for host access
       copy:
         src: /etc/kubernetes/admin.conf
