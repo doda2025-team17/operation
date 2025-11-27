@@ -15,6 +15,8 @@ No work
 ### Ana
 
 ### Nicholas
+- Attended team meetings on Tuesday and Friday.
+- Responsible for step 1 and 2.
 
 ## Week Q4.3 (Nov. 21 - 27)
 ### Rebecca
@@ -29,6 +31,9 @@ No work
 ### Ana
 
 ### Nicholas
+- Attended the meetings on Sunday and Thursday.
+- Responsible for steps 13 - 17
+- Reviewed PR's from step 7-12, and some others.
 
 ## Week Q4.4 (Nov. 28 - Dec. 4)
 ### Rebecca
