@@ -1,0 +1,17 @@
+# IP range for LoadBalancer Services handed out by MetalLB
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: default-pool
+  namespace: metallb-system
+spec:
+  addresses:
+    - {{ metallb_pool_start }}-{{ metallb_pool_end }}
+
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: default-advertisement
+  namespace: metallb-system
+spec: {}

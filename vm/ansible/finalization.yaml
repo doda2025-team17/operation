@@ -1,0 +1,80 @@
+---
+# Step 20: Install and configure MetalLB
+- name: Install and configure MetalLB
+  hosts: all
+  become: yes
+  g
+
+  vars:
+    metallb_version: "v0.14.9"
+    metallb_namespace: "metallb-system"
+
+    # Address range
+    metallb_pool_start: "192.168.56.90"
+    metallb_pool_end:   "192.168.56.99"
+
+    # How many seconds to wait for pods to become Ready
+    metallb_wait_timeout: "180s"
+
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+
+  tasks:
+    # Safety: only run on the controller (others will noop)
+    - name: Skip tasks when not on control-plane
+      meta: end_play
+      when: ansible_hostname != "ctrl"
+
+    # Pre-check: ensure nodes are available (workers should be joined)
+    - name: Check that nodes are visible
+      command: kubectl get nodes
+      register: nodes_out
+      changed_when: false
+
+    - name: Abort early if no nodes are ready yet
+      command: kubectl get nodes --no-headers
+      register: nodes_table
+      changed_when: false
+      failed_when: nodes_table.stdout is not search(" Ready ")
+
+    # Install MetalLB (native mode)
+    - name: Apply MetalLB operator (native)
+      command: >
+        kubectl apply -f
+        https://raw.githubusercontent.com/metallb/metallb/{{ metallb_version }}/config/manifests/metallb-native.yaml
+
+    # Wait for controller & speaker to be Ready
+    - name: Wait for MetalLB controller to be Ready
+      command: >
+        kubectl wait --namespace {{ metallb_namespace }}
+        --for=condition=Ready pod
+        -l component=controller
+        --timeout={{ metallb_wait_timeout }}
+      changed_when: false
+
+    - name: Wait for MetalLB speaker to be Ready
+      command: >
+        kubectl wait --namespace {{ metallb_namespace }}
+        --for=condition=Ready pod
+        -l component=speaker
+        --timeout={{ metallb_wait_timeout }}
+      changed_when: false
+
+    # Configure IP pool + L2 advertisement
+    - name: Render MetalLB IPAddressPool + L2Advertisement
+      template:
+        src: templates/metallb-config.yaml.j2
+        dest: /tmp/metallb-config.yaml
+        mode: '0644'
+
+    - name: Apply MetalLB address pool configuration
+      command: kubectl apply -f /tmp/metallb-config.yaml
+
+    # Verify CRDs exist
+    - name: Show IPAddressPools
+      command: kubectl get ipaddresspools -n {{ metallb_namespace }}
+      changed_when: false
+
+    - name: Show L2Advertisements
+      command: kubectl get l2advertisements -n {{ metallb_namespace }}
+      changed_when: false
