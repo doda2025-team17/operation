@@ -4,27 +4,29 @@ No work
 
 ## Week Q4.2 (Nov. 15 - 21)
 ### Rebecca
+- attended all the team meetings (Tuesday, Thursday, and Friday)
+- completed F7, along with the README.md and ACTIVITY.md files (PR [#1](https://github.com/doda2025-team17/operation/pull/1)) and F8(PR [#4](https://github.com/doda2025-team17/model-service/pull/4) and [#3](https://github.com/doda2025-team17/app/pull/3))
+- reviewed a large number of other people's PRs
 
 ### Arnav
 
 ### Kristian
 
 ### Ana
-
-### Lorena
 
 ### Nicholas
 
 ## Week Q4.3 (Nov. 21 - 27)
 ### Rebecca
+- attended all team meetings (Sunday, Thursday, and Friday)
+- completed Steps 7-12 in PR [#8](https://github.com/doda2025-team17/operation/pull/8), [#9](https://github.com/doda2025-team17/operation/pull/9), and [#10](https://github.com/doda2025-team17/operation/pull/10)
+- reviewed a large number of other people's PRs
 
 ### Arnav
 
 ### Kristian
 
 ### Ana
-
-### Lorena
 
 ### Nicholas
 
@@ -37,8 +39,6 @@ No work
 
 ### Ana
 
-### Lorena
-
 ### Nicholas
 
 ## Week Q4.5 (Dec. 4 - 10)
@@ -49,8 +49,6 @@ No work
 ### Kristian
 
 ### Ana
-
-### Lorena
 
 ### Nicholas
 
@@ -63,8 +61,6 @@ No work
 
 ### Ana
 
-### Lorena
-
 ### Nicholas
 
 ## Week Q4.7 (Jan. 5 - 11)
@@ -75,8 +71,6 @@ No work
 ### Kristian
 
 ### Ana
-
-### Lorena
 
 ### Nicholas
 
@@ -89,8 +83,6 @@ No work
 
 ### Ana
 
-### Lorena
-
 ### Nicholas
 
 ## Week Q4.9 (Jan. 19 - 25)
@@ -102,8 +94,6 @@ No work
 
 ### Ana
 
-### Lorena
-
 ### Nicholas
 
 ## Week Q4.10 (Jan. 26 - 30)
@@ -114,7 +104,5 @@ No work
 ### Kristian
 
 ### Ana
-
-### Lorena
 
 ### Nicholas
