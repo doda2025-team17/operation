@@ -3,7 +3,6 @@
 - name: Install and configure MetalLB
   hosts: all
   become: yes
-  g
 
   vars:
     metallb_version: "v0.14.9"
@@ -13,7 +12,7 @@
     metallb_pool_start: "192.168.56.90"
     metallb_pool_end:   "192.168.56.99"
 
-    # How many seconds to wait for pods to become Ready
+    # How many seconds to wait for pods to become ready
     metallb_wait_timeout: "180s"
 
   environment:
