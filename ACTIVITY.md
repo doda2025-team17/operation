@@ -31,7 +31,7 @@ No work
 - Attended all team meetings this week
 - Completed step 20 in PR [#19](https://github.com/doda2025-team17/operation/pull/19)
 - Worked on Step 21 but Step 21 is not working on everyone's system so needs more work
-- Worked on Step 22 but unable to merge as it requires Step 21 to work on other people's systems
+- Worked on Step 22 but unable to merge as it requires Step 21 to work on other people's systems, PR [#20](https://github.com/doda2025-team17/operation/pull/20)
 - Reviewed and merged other people's PRs
 
 ### Kristian
