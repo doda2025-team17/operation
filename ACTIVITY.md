@@ -14,6 +14,9 @@ No work
 - Approved some PRs in the App repository related to F1 and F11
 
 ### Kristian
+- Attended all team meetings.
+- Completed task F9 (PR [#5](https://github.com/doda2025-team17/model-service/pull/5)) and task F10 (PR [#6](https://github.com/doda2025-team17/model-service/pull/6)).
+- Reviewed some Prs.
 
 ### Ana
 
@@ -35,6 +38,9 @@ No work
 - Reviewed and merged other people's PRs
 
 ### Kristian
+- Attended all team meetings.
+- Completed step 18 and 19 (PR [#17](https://github.com/doda2025-team17/operation/pull/17)).
+- Reviewed many PRs.
 
 ### Ana
 
