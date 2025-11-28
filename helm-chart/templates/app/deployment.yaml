@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-service
+  labels:
+    app: app-service
+spec:
+  replicas: {{ .Values.app.replicaCount }}
+  selector:
+    matchLabels:
+      app: app-service
+  template:
+    metadata:
+      labels:
+        app: app-service
+    spec:
+      containers:
+      - name: app-service
+        image: "{{ .Values.global.imageRegistry }}/{{ .Values.app.image }}:{{ .Values.app.tag }}"
+        ports:
+        - containerPort: {{ .Values.app.containerPort }}
+        env:
+        - name: APP_SERVER_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: APP_SERVER_PORT
+        - name: MODEL_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: MODEL_HOST
+        {{- if .Values.storage.enabled }}
+        volumeMounts:
+        - name: shared-storage
+          mountPath: {{ .Values.storage.appMountPath }}
+        {{- end }}
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: {{ .Values.app.containerPort }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: {{ .Values.app.containerPort }}
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      {{- if .Values.storage.enabled }}
+      volumes:
+      - name: shared-storage
+        hostPath:
+          path: {{ .Values.global.sharedStoragePath }}
+          type: DirectoryOrCreate
+      {{- end }}

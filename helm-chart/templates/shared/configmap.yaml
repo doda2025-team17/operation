@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  APP_SERVER_PORT: "{{ .Values.app.containerPort | toString }}"
+  MODEL_HOST: "http://{{ .Values.config.modelServiceName }}:{{ .Values.config.modelServicePort }}"
+  CONFIG_VERSION: "v1"

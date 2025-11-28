@@ -1,0 +1,43 @@
+global:
+  imageRegistry: "ghcr.io/doda2025-team17"
+  sharedStoragePath: "/mnt/shared"
+
+# App service configuration
+app:
+  image: "app"
+  tag: "latest"
+  replicaCount: 2
+  containerPort: 8080
+  servicePort: 8080
+
+# Model service configuration  
+model:
+  image: "model-service"
+  tag: "latest"
+  replicaCount: 2
+  containerPort: 8081
+  servicePort: 8081
+  modelDir: "/models"
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: "app.team17.local"
+      paths:
+        - path: "/"
+          pathType: Prefix
+  tls: []
+
+# Storage configuration - using the correct mount path
+storage:
+  enabled: true
+  hostPath: "/mnt/shared"  # This matches the Vagrant synced_folder
+  appMountPath: "/shared-data"
+  modelMountPath: "/models"
+
+config:
+  appHostname: "app.team17.local"
+  modelServiceName: "model-service"
+  modelServicePort: 8081
