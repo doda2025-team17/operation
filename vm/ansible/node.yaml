@@ -1,7 +1,7 @@
 ---
 # Worker node specific setup
 - name: Worker node setup
-  hosts: all
+  hosts: nodes
   become: yes
   tasks:
     # Generate Join Command
