@@ -3,17 +3,17 @@
 - name: Worker node setup
   hosts: all
   become: yes
-  tasks: []
-    # # Generate Join Command
-    # - name: Generate kubeadm join command on controller
-    #   become: yes
-    #   command: kubeadm token create --print-join-command
-    #   delegate_to: ctrl
-    #   register: kubeadm_join_cmd
-    #   run_once: true
+  tasks:
+    # Generate Join Command
+    - name: Generate kubeadm join command on controller
+      become: yes
+      command: kubeadm token create --print-join-command
+      delegate_to: ctrl
+      register: kubeadm_join_cmd
+      run_once: true
 
-    # # Join worker node to the cluster
-    # - name: Join worker node to Kubernetes cluster
-    #   ansible.builtin.shell: "{{ kubeadm_join_cmd.stdout }}"
-    #   args:
-    #     creates: /etc/kubernetes/kubelet.conf
+    # Join worker node to the cluster
+    - name: Join worker node to Kubernetes cluster
+      ansible.builtin.shell: "{{ kubeadm_join_cmd.stdout }}"
+      args:
+        creates: /etc/kubernetes/kubelet.conf
