@@ -1,8 +1,12 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-# Configurable number of worker nodes
+# Configurable variables
 NUM_WORKERS = 2
+CTRL_CPU = 1
+NODE_CPU = 2
+CTRL_MEMORY = "4096"
+NODE_MEMORY = "6144"
 
 Vagrant.configure("2") do |config|
   # Base box for all VMs
@@ -20,8 +24,8 @@ Vagrant.configure("2") do |config|
     # VirtualBox specific settings
     ctrl.vm.provider "virtualbox" do |vb|
       vb.name = "k8s-ctrl"
-      vb.memory = "4096"
-      vb.cpus = 1
+      vb.memory = CTRL_MEMORY
+      vb.cpus = CTRL_CPU
     end
     
     # Common provisioning first
@@ -51,8 +55,8 @@ Vagrant.configure("2") do |config|
       # VirtualBox specific settings
       node.vm.provider "virtualbox" do |vb|
         vb.name = "k8s-node-#{i}"
-        vb.memory = "6144"
-        vb.cpus = 2
+        vb.memory = NODE_MEMORY
+        vb.cpus = NODE_CPU
       end
       
       # Common provisioning first
@@ -69,5 +73,35 @@ Vagrant.configure("2") do |config|
         ansible.playbook = "ansible/node.yaml"
       end
     end
+  end
+
+  config.trigger.after :up do |trigger|
+    trigger.name = "Generate Ansible Inventory"
+    trigger.info = "Generating inventory.cfg file with all active nodes"
+    
+    # Build workers section
+    workers = []
+    (1..NUM_WORKERS).each do |i|
+      workers << "node-#{i} ansible_host=192.168.56.#{100 + i} ansible_user=vagrant"
+    end
+    
+    inventory_content = <<~EOF
+[control_plane]
+ctrl ansible_host=192.168.56.100 ansible_user=vagrant
+
+[workers]
+#{workers.join("\n")}
+
+[k8s_cluster:children]
+control_plane
+workers
+
+[all:vars]
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+EOF
+    
+    # Write to file on host machine
+    File.write("inventory.cfg", inventory_content)
+    puts "Generated inventory.cfg with #{NUM_WORKERS} worker nodes"
   end
 end
