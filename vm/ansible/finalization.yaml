@@ -152,7 +152,6 @@
             name: cluster-admin
             apiGroup: rbac.authorization.k8s.io
 
-
     - name: Apply Dashboard Ingress
       kubernetes.core.k8s:
         state: present
@@ -174,10 +173,9 @@
                       pathType: Prefix
                       backend:
                         service:
-                          name: kubernetes-dashboard
+                          name: kubernetes-dashboard-kong-proxy
                           port:
                             number: 443
-
 
     - name: Wait for Dashboard pods to be Ready
       command: >
