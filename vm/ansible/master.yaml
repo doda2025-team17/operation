@@ -10,3 +10,23 @@
 
 - name: Import finalization steps
   import_playbook: finalization.yaml
+
+- name: Initialize shared storage on all nodes
+  hosts: all
+  become: yes
+  tasks:
+    - name: Create shared storage directory
+      file:
+        path: /mnt/shared
+        state: directory
+        owner: vagrant
+        group: vagrant
+        mode: '0775'
+
+    - name: Create models subdirectory
+      file:
+        path: /mnt/shared/models
+        state: directory
+        owner: vagrant
+        group: vagrant
+        mode: '0775'

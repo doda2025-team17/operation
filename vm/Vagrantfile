@@ -10,6 +10,22 @@ NODE_MEMORY = "6144"
 Vagrant.configure("2") do |config|
   config.vm.box = "bento/ubuntu-24.04"
 
+  # Get the absolute path to the shared directory
+  shared_dir = File.expand_path("../../helm-chart/shared", __dir__)
+  
+  # Create the directory if it doesn't exist
+  unless File.directory?(shared_dir)
+    FileUtils.mkdir_p(shared_dir)
+    puts "Created shared directory: #{shared_dir}"
+  end
+
+  # Add shared storage to ALL VMs (control and workers)
+  config.vm.synced_folder shared_dir, "/mnt/shared", 
+    type: "virtualbox",
+    owner: "vagrant",
+    group: "vagrant",
+    mount_options: ["dmode=775", "fmode=664"]
+
   # Control Node
   config.vm.define "ctrl" do |ctrl|
     ctrl.vm.hostname = "ctrl"
