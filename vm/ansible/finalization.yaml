@@ -28,12 +28,6 @@
       register: nodes_out
       changed_when: false
 
-    - name: Abort early if no nodes are ready yet
-      command: kubectl get nodes --no-headers
-      register: nodes_table
-      changed_when: false
-      failed_when: nodes_table.stdout is not search(" Ready ")
-
     - name: Apply MetalLB operator (native)
       command: >
         kubectl apply -f
