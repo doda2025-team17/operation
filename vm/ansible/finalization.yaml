@@ -45,6 +45,13 @@
         kubectl apply -f
         https://raw.githubusercontent.com/metallb/metallb/{{ metallb_version }}/config/manifests/metallb-native.yaml
 
+    - name: Create MetalLB memberlist secret if missing
+      shell: |
+        kubectl -n {{ metallb_namespace }} get secret memberlist >/dev/null 2>&1 || \
+        kubectl -n {{ metallb_namespace }} create secret generic memberlist \
+          --from-literal=secretkey="$(openssl rand -base64 128)"
+      changed_when: false
+
     - name: Wait for MetalLB controller to be Ready (up to 10 minutes)
       command: kubectl wait --namespace metallb-system --for=condition=Ready pod -l component=controller --timeout=600s
       register: metallb_wait
@@ -70,27 +77,21 @@
       command: kubectl apply -f /tmp/metallb-config.yaml
 
     # Step 21: NGINX Ingress (Helm)
-    - name: Un-taint control-plane (new key)
+    - name: Un-taint control-plane
       command: kubectl taint nodes --all node-role.kubernetes.io/control-plane-
-      register: untaint_cp
       failed_when: false
-      changed_when: "'taint key' in untaint_cp.stderr or untaint_cp.rc == 0"
-
-    - name: Un-taint legacy master key (older clusters)
-      command: kubectl taint nodes --all node-role.kubernetes.io/master-
-      register: untaint_master
-      failed_when: false
-      changed_when: "'taint key' in untaint_master.stderr or untaint_master.rc == 0"
-
-    - name: Wait for ingress-nginx controller deployment to be available (up to 10m)
-      command: >
-        kubectl -n {{ ingress_namespace }}
-        rollout status deploy/ingress-nginx-controller
-        --timeout=10m
-      register: ingress_rollout
       changed_when: false
-      failed_when: ingress_rollout.rc != 0
 
+    - name: Un-taint legacy master key
+      command: kubectl taint nodes --all node-role.kubernetes.io/master-
+      failed_when: false
+      changed_when: false
+
+    - name: Add ingress-nginx Helm repo
+      command: helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+      register: helm_add_repo
+      changed_when: "'has been added' in helm_add_repo.stdout or 'exists' not in helm_add_repo.stdout"
+      failed_when: false
 
     - name: Helm repo update
       command: helm repo update
