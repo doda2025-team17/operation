@@ -1,7 +1,7 @@
 ---
 # Control plane specific setup
 - name: Control plane setup
-  hosts: all
+  hosts: ctrl
   become: yes
   tasks:
     - name: Check if cluster is already initialized
