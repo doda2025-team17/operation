@@ -9,6 +9,9 @@ No work
 - reviewed a large number of other people's PRs
 
 ### Arnav
+- Attended all three team meetings
+- Completed F11 (PR [#1](https://github.com/doda2025-team17/lib-version/pull/1) in the Lib-Version repository)
+- Approved some PRs in the App repository related to F1 and F11
 
 ### Kristian
 
@@ -25,6 +28,11 @@ No work
 - reviewed a large number of other people's PRs
 
 ### Arnav
+- Attended all team meetings this week
+- Completed step 20 in PR [#19](https://github.com/doda2025-team17/operation/pull/19)
+- Worked on Step 21 but Step 21 is not working on everyone's system so needs more work
+- Worked on Step 22 but unable to merge as it requires Step 21 to work on other people's systems
+- Reviewed and merged other people's PRs
 
 ### Kristian
 
