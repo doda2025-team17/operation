@@ -142,7 +142,7 @@
       register: kd_install
       changed_when: "'deployed' in kd_install.stdout or 'upgraded' in kd_install.stdout"
 
-    # Ensure Python client for Kubernetes is present (required by kubernetes.core.k8s)
+    # Ensure Python client for Kubernetes is available (required by kubernetes.core.k8s)
     - name: Install python3-kubernetes via apt
       apt:
         name: python3-kubernetes
