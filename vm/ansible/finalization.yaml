@@ -28,6 +28,18 @@
       register: nodes_out
       changed_when: false
 
+    - name: Make control-plane schedulable (single-node cluster)
+      command: kubectl taint nodes --all node-role.kubernetes.io/control-plane-
+      register: untaint1
+      failed_when: false
+      changed_when: "'taint key' in untaint1.stderr or untaint1.rc == 0"
+
+    - name: Remove legacy master taint if present
+      command: kubectl taint nodes --all node-role.kubernetes.io/master-
+      register: untaint2
+      failed_when: false
+      changed_when: "'taint key' in untaint2.stderr or untaint2.rc == 0"
+
     - name: Apply MetalLB operator (native)
       command: >
         kubectl apply -f
