@@ -1,36 +1,50 @@
 # Activity Overview
+
 ## Week Q1.1 (Nov. 10 - 14)
+
 No work
 
 ## Week Q4.2 (Nov. 15 - 21)
+
 ### Rebecca
+
 - attended all the team meetings (Tuesday, Thursday, and Friday)
 - completed F7, along with the README.md and ACTIVITY.md files (PR [#1](https://github.com/doda2025-team17/operation/pull/1)) and F8(PR [#4](https://github.com/doda2025-team17/model-service/pull/4) and [#3](https://github.com/doda2025-team17/app/pull/3))
 - reviewed a large number of other people's PRs
 
 ### Arnav
+
 - Attended all three team meetings
 - Completed F11 (PR [#1](https://github.com/doda2025-team17/lib-version/pull/1) in the Lib-Version repository)
 - Approved some PRs in the App repository related to F1 and F11
 
 ### Kristian
+
 - Attended all team meetings.
 - Completed task F9 (PR [#5](https://github.com/doda2025-team17/model-service/pull/5)) and task F10 (PR [#6](https://github.com/doda2025-team17/model-service/pull/6)).
 - Reviewed some Prs.
 
 ### Ana
 
+- attended all the team meetings
+- completed F3 and F6 (PR model-service [#2](https://github.com/doda2025-team17/model-service/pull/2) and PR app [#1](https://github.com/doda2025-team17/app/pull/1))
+- reviewed other people's PRs
+
 ### Nicholas
+
 - Attended team meetings on Tuesday and Friday.
 - Responsible for step 1 and 2.
 
 ## Week Q4.3 (Nov. 21 - 27)
+
 ### Rebecca
+
 - attended all team meetings (Sunday, Thursday, and Friday)
 - completed Steps 7-12 in PR [#8](https://github.com/doda2025-team17/operation/pull/8), [#9](https://github.com/doda2025-team17/operation/pull/9), and [#10](https://github.com/doda2025-team17/operation/pull/10)
 - reviewed a large number of other people's PRs
 
 ### Arnav
+
 - Attended all team meetings this week
 - Completed step 20 in PR [#19](https://github.com/doda2025-team17/operation/pull/19)
 - Worked on Step 21 but Step 21 is not working on everyone's system so needs more work
@@ -38,18 +52,25 @@ No work
 - Reviewed and merged other people's PRs
 
 ### Kristian
+
 - Attended all team meetings.
 - Completed step 18 and 19 (PR [#17](https://github.com/doda2025-team17/operation/pull/17)).
 - Reviewed many PRs.
 
 ### Ana
 
+- attended all the team meetings
+- completed steps 1 and 2 (PR [#5](https://github.com/doda2025-team17/operation/pull/5)) and steps 3-6 (PR [#7](https://github.com/doda2025-team17/operation/pull/7))
+- reviewed other people's PRs
+
 ### Nicholas
+
 - Attended the meetings on Sunday and Thursday.
 - Responsible for steps 13 - 17
 - Reviewed PR's from step 7-12, and some others.
 
 ## Week Q4.4 (Nov. 28 - Dec. 4)
+
 ### Rebecca
 
 ### Arnav
@@ -61,6 +82,7 @@ No work
 ### Nicholas
 
 ## Week Q4.5 (Dec. 4 - 10)
+
 ### Rebecca
 
 ### Arnav
@@ -72,6 +94,7 @@ No work
 ### Nicholas
 
 ## Week Q4.6 (Dec. 11 - 17)
+
 ### Rebecca
 
 ### Arnav
@@ -83,6 +106,7 @@ No work
 ### Nicholas
 
 ## Week Q4.7 (Jan. 5 - 11)
+
 ### Rebecca
 
 ### Arnav
@@ -94,6 +118,7 @@ No work
 ### Nicholas
 
 ## Week Q4.8 (Jan. 12 - 18)
+
 ### Rebecca
 
 ### Arnav
@@ -105,6 +130,7 @@ No work
 ### Nicholas
 
 ## Week Q4.9 (Jan. 19 - 25)
+
 ### Rebecca
 
 ### Arnav
@@ -116,6 +142,7 @@ No work
 ### Nicholas
 
 ## Week Q4.10 (Jan. 26 - 30)
+
 ### Rebecca
 
 ### Arnav
