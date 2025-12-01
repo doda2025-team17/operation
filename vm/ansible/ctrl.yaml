@@ -4,6 +4,7 @@
   hosts: ctrl
   become: yes
   tasks:
+    # Step 13: Initialize cluster
     - name: Check if cluster is already initialized
       stat:
         path: /etc/kubernetes/admin.conf
@@ -19,11 +20,7 @@
       when: not kubeadmin_conf.stat.exists
       register: kubeadm_init
 
-    - name: Re-check admin.conf after kubeadm init
-      stat:
-        path: /etc/kubernetes/admin.conf
-      register: kubeadmin_conf_after
-
+    # Step 14: Setup kubectl for vagrant user
     - name: Ensure .kube directory exists for vagrant user
       file:
         path: /home/vagrant/.kube
@@ -31,7 +28,6 @@
         owner: vagrant
         group: vagrant
         mode: '0700'
-      when: kubeadmin_conf_after.stat.exists
 
     - name: Configure kubectl for vagrant user
       copy:
@@ -41,7 +37,56 @@
         group: vagrant
         mode: '0600'
         remote_src: yes
-      when: kubeadmin_conf_after.stat.exists
+
+    # Step 14: Copy kubeconfig to host
+    - name: Copy kubeconfig to shared folder for host access
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /vagrant/kubeconfig
+        owner: vagrant
+        group: vagrant
+        mode: '0600'
+        remote_src: yes
+
+    # Step 15: Install Flannel CNI
+    - name: Check if flannel is already installed
+      command: kubectl get daemonset -n kube-flannel kube-flannel-ds
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      register: flannel_check
+      failed_when: false
+      changed_when: false
+
+    - name: Download Flannel manifest
+      get_url:
+        url: https://raw.githubusercontent.com/flannel-io/flannel/v0.26.7/Documentation/kube-flannel.yml
+        dest: /tmp/kube-flannel.yml
+        mode: '0644'
+      when: flannel_check.rc != 0
+
+    - name: Modify Flannel to use eth1 interface before applying
+      replace:
+        path: /tmp/kube-flannel.yml
+        regexp: '(- --kube-subnet-mgr)$'
+        replace: '\1\n        - --iface=eth1'
+      when: flannel_check.rc != 0
+
+    - name: Apply modified Flannel CNI
+      command: kubectl apply -f /tmp/kube-flannel.yml
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      when: flannel_check.rc != 0
+
+    # Wait for control plane to be ready before workers join
+    - name: Wait for control plane node to be Ready
+      command: kubectl get nodes ctrl -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      register: node_status
+      until: node_status.stdout == "True"
+      retries: 30
+      delay: 5
+      changed_when: false
 
     # Step 16: Install Helm CLI via Apt
     - name: Install Helm apt prerequisites
@@ -69,6 +114,8 @@
           - --output
           - /usr/share/keyrings/helm.gpg
           - /tmp/helm.gpgkey
+      args:
+        creates: /usr/share/keyrings/helm.gpg
 
     - name: Add Helm apt repository
       apt_repository:
@@ -82,7 +129,7 @@
         state: present
         update_cache: yes
 
-    # Step 17: Install Helm diff plugin 
+    # Step 17: Install Helm diff plugin
     - name: Check if helm diff plugin is installed
       become_user: vagrant
       command: helm plugin list
@@ -94,51 +141,3 @@
       become_user: vagrant
       command: helm plugin install https://github.com/databus23/helm-diff
       when: "'diff' not in helm_plugins.stdout"
-
-    - name: Copy kubeconfig to shared folder for host access
-      copy:
-        src: /etc/kubernetes/admin.conf
-        dest: /vagrant/kubeconfig
-        owner: vagrant
-        group: vagrant
-        mode: '0600'
-        remote_src: yes
-      when: kubeadmin_conf_after.stat.exists
-
-    - name: Check if flannel CNI config already exists
-      stat:
-        path: /etc/cni/net.d/10-flannel.conflist
-      register: flannel_cni
-
-    - name: Install flannel CNI network plugin (v0.26.7)
-      command: >
-        kubectl apply -f
-        https://raw.githubusercontent.com/flannel-io/flannel/v0.26.7/Documentation/kube-flannel.yml
-      environment:
-        KUBECONFIG: /etc/kubernetes/admin.conf
-      when:
-        - kubeadmin_conf_after.stat.exists
-        - not flannel_cni.stat.exists
-
-    - name: Check current flannel DaemonSet args
-      command: >
-        kubectl -n kube-flannel get daemonset kube-flannel-ds
-        -o jsonpath={.spec.template.spec.containers[0].args}
-      environment:
-        KUBECONFIG: /etc/kubernetes/admin.conf
-      register: flannel_args
-      failed_when: false
-      changed_when: false
-      when: kubeadmin_conf_after.stat.exists
-
-    - name: Configure flannel to use host-only interface eth1
-      command: >
-        kubectl -n kube-flannel patch daemonset kube-flannel-ds
-        --type=json
-        -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--iface=eth1"}]'
-      environment:
-        KUBECONFIG: /etc/kubernetes/admin.conf
-      when:
-        - kubeadmin_conf_after.stat.exists
-        - flannel_args.stdout is defined
-        - "'--iface=eth1' not in flannel_args.stdout"
