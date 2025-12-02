@@ -26,12 +26,15 @@
         key: "{{ lookup('file', item) }}"
       loop: "{{ keys }}"
 
-    - name: Ensure SSH key exists for vagrant user
-      become_user: vagrant
-      openssh_keypair:
-        path: /home/vagrant/.ssh/id_rsa
-        state: present
+    # Step 4: Copy provided SSH host keys
+    - name: Copy provided SSH host keys
+      copy:
+        src: "ssh-keys/host-keys/{{ ansible_hostname }}/"
+        dest: /etc/ssh/
+        owner: root
+        group: root
         mode: '0600'
+      notify: restart ssh
 
     - name: Ensure ssh service is enabled and running
       systemd:
@@ -183,3 +186,10 @@
         state: started
         enabled: yes
         daemon_reload: yes
+
+  # Handlers for service restarts
+  handlers:
+    - name: restart ssh
+      systemd:
+        name: ssh
+        state: restarted
