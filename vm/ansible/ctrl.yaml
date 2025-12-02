@@ -77,17 +77,6 @@
         KUBECONFIG: /etc/kubernetes/admin.conf
       when: flannel_check.rc != 0
 
-    # Wait for control plane to be ready before workers join
-    - name: Wait for control plane node to be Ready
-      command: kubectl get nodes ctrl -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
-      environment:
-        KUBECONFIG: /etc/kubernetes/admin.conf
-      register: node_status
-      until: node_status.stdout == "True"
-      retries: 30
-      delay: 5
-      changed_when: false
-
     # Step 16: Install Helm CLI via Apt
     - name: Install Helm apt prerequisites
       apt:

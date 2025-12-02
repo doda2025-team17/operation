@@ -15,7 +15,6 @@
           - gnupg
           - lsb-release
           - openssh-server
-          - iproute2
         update_cache: yes
         state: present
 
