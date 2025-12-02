@@ -1,0 +1,97 @@
+# Default values for spam-detector chart.
+# This is a YAML-formatted file. Declare variables to be passed into your templates.
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+podSecurityContext: {}
+securityContext: {}
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+app:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/doda2025-team17/app
+    pullPolicy: IfNotPresent
+    tag: "v1.0.0"
+  service:
+    type: ClusterIP
+    port: 8080
+  env:
+    APP_SERVER_PORT: "8080"
+    MODEL_HOST: "http://model-service:8081"
+  resources: {}
+  livenessProbe:
+    httpGet:
+      path: /
+      port: http
+  readinessProbe:
+    httpGet:
+      path: /
+      port: http
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 80
+
+model:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/doda2025-team17/model-service
+    pullPolicy: IfNotPresent
+    tag: "v1.0.0"
+  service:
+    port: 8081
+  env:
+    MODEL_SERVICE_PORT: "8081"
+    MODEL_URL: ""
+  resources: {}
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: http
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: http
+  volumeMounts: []
+  volumes: []
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: spam.example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
+# Expose the app via Gateway API HTTPRoute (when controller available, e.g., Istio)
+httpRoute:
+  enabled: false
+  annotations: {}
+  parentRefs:
+    - name: gateway
+      sectionName: http
+  hostnames:
+    - spam.example.local
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
