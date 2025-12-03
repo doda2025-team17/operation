@@ -13,52 +13,34 @@
     metallb_pool_end:   "192.168.56.99"
     metallb_wait_timeout: "180s"
 
+    # Step 21 vars
+    ingress_namespace: "ingress-nginx"
+    ingress_lb_ip: "192.168.56.95"
+    ingress_wait_timeout: "240s"
+
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf
 
   tasks:
     # Step 20: MetalLB install
-    - name: Check that nodes are visible
-      command: kubectl get nodes
-      register: nodes_out
-      changed_when: false
-
-    - name: Make control-plane schedulable (single-node cluster)
-      command: kubectl taint nodes --all node-role.kubernetes.io/control-plane-
-      register: untaint1
-      failed_when: false
-      changed_when: "'taint key' in untaint1.stderr or untaint1.rc == 0"
-
-    - name: Remove legacy master taint if present
-      command: kubectl taint nodes --all node-role.kubernetes.io/master-
-      register: untaint2
-      failed_when: false
-      changed_when: "'taint key' in untaint2.stderr or untaint2.rc == 0"
-
     - name: Apply MetalLB operator (native)
       command: >
         kubectl apply -f
         https://raw.githubusercontent.com/metallb/metallb/{{ metallb_version }}/config/manifests/metallb-native.yaml
 
-    - name: Create MetalLB memberlist secret if missing
-      shell: |
-        kubectl -n {{ metallb_namespace }} get secret memberlist >/dev/null 2>&1 || \
-        kubectl -n {{ metallb_namespace }} create secret generic memberlist \
-          --from-literal=secretkey="$(openssl rand -base64 128)"
-      changed_when: false
-
-    - name: Wait for MetalLB controller to be Ready (up to 10 minutes)
-      command: kubectl wait --namespace metallb-system --for=condition=Ready pod -l component=controller --timeout=600s
-      register: metallb_wait
-      retries: 3
-      delay: 30
-      until: metallb_wait.rc == 0
-
-    - name: Wait for MetalLB speaker to be Ready
+    - name: Wait for MetalLB controller to be Ready
       command: >
         kubectl wait --namespace {{ metallb_namespace }}
         --for=condition=Ready pod
-        -l component=speaker
+        -l app=metallb,component=controller
+        --timeout={{ metallb_wait_timeout }}
+      changed_when: false
+
+    - name: Wait for MetalLB speakers to be Ready
+      command: >
+        kubectl wait --namespace {{ metallb_namespace }}
+        --for=condition=Ready pod
+        -l app=metallb,component=speaker
         --timeout={{ metallb_wait_timeout }}
       changed_when: false
 
@@ -70,3 +52,49 @@
 
     - name: Apply MetalLB address pool configuration
       command: kubectl apply -f /tmp/metallb-config.yaml
+
+    # Step 21: NGINX Ingress
+    - name: Add ingress-nginx Helm repo
+      kubernetes.core.helm_repository:
+        name: ingress-nginx
+        repo_url: https://kubernetes.github.io/ingress-nginx
+      register: ingress_repo
+
+    - name: Install/upgrade NGINX Ingress Controller
+      kubernetes.core.helm:
+        name: ingress-nginx
+        chart_ref: ingress-nginx/ingress-nginx
+        release_namespace: "{{ ingress_namespace }}"
+        create_namespace: true
+        timeout: 600s
+        values:
+          controller:
+            service:
+              type: LoadBalancer
+              externalTrafficPolicy: Local
+              loadBalancerIP: "{{ ingress_lb_ip }}"
+            ingressClassResource:
+              default: true
+            ingressClass: nginx
+
+    - name: Wait for ingress controller pod to be Ready
+      command: >
+        kubectl wait --namespace {{ ingress_namespace }}
+        --for=condition=Ready pod
+        -l app.kubernetes.io/component=controller
+        --timeout={{ ingress_wait_timeout }}
+      changed_when: false
+
+    - name: Verify Service has the expected EXTERNAL-IP
+      command: >
+        kubectl get svc -n {{ ingress_namespace }} ingress-nginx-controller
+        -o jsonpath={.status.loadBalancer.ingress[0].ip}
+      register: svc_ip
+      changed_when: false
+
+    - name: Assert EXTERNAL-IP matches the configured MetalLB IP
+      assert:
+        that:
+          - svc_ip.stdout == ingress_lb_ip
+        fail_msg: "Ingress Service EXTERNAL-IP ({{ svc_ip.stdout }}) does not match expected {{ ingress_lb_ip }}"
+        success_msg: "Ingress Service EXTERNAL-IP correctly set to {{ ingress_lb_ip }}"
