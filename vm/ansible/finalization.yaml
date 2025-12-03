@@ -37,7 +37,7 @@
       command: >
         kubectl wait --namespace {{ metallb_namespace }}
         --for=condition=Ready pod
-        -l 'app=metallb,component=controller'
+        -l app=metallb,component=controller
         --timeout={{ metallb_wait_timeout }}
       changed_when: false
 
