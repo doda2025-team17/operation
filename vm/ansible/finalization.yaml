@@ -23,11 +23,6 @@
 
   tasks:
     # Step 20: MetalLB install
-    - name: Check that nodes are visible
-      command: kubectl get nodes
-      register: nodes_out
-      changed_when: false
-
     - name: Apply MetalLB operator (native)
       command: >
         kubectl apply -f
@@ -71,7 +66,6 @@
         chart_ref: ingress-nginx/ingress-nginx
         release_namespace: "{{ ingress_namespace }}"
         create_namespace: true
-        wait: true
         timeout: 600s
         values:
           controller:
