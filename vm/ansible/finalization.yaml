@@ -34,7 +34,11 @@
         https://raw.githubusercontent.com/metallb/metallb/{{ metallb_version }}/config/manifests/metallb-native.yaml
 
     - name: Wait for MetalLB controller to be Ready (up to 10 minutes)
-      command: kubectl wait --namespace metallb-system --for=condition=Ready pod -l component=controller --timeout=600s
+      command: >
+        kubectl wait --namespace {{ metallb_namespace }}
+        --for=condition=Ready pod
+        -l component=controller
+        --timeout=600s
       register: metallb_wait
       retries: 3
       delay: 30
@@ -57,25 +61,30 @@
     - name: Apply MetalLB address pool configuration
       command: kubectl apply -f /tmp/metallb-config.yaml
 
-    # Step 21: NGINX Ingress (Helm)
+    # Step 21: NGINX Ingress (Helm, idempotent)
     - name: Add ingress-nginx Helm repo
-      command: helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-      register: helm_add_repo
-      changed_when: "'has been added' in helm_add_repo.stdout or 'exists' not in helm_add_repo.stdout"
-      failed_when: false
-
-    - name: Helm repo update
-      command: helm repo update
+      kubernetes.core.helm_repository:
+        name: ingress-nginx
+        repo_url: https://kubernetes.github.io/ingress-nginx
+      register: ingress_repo
 
     - name: Install/upgrade NGINX Ingress Controller
-      command: >
-        helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx
-        --namespace {{ ingress_namespace }} --create-namespace
-        --set controller.service.type=LoadBalancer
-        --set controller.service.externalTrafficPolicy=Local
-        --set controller.ingressClassResource.default=true
-        --set controller.ingressClass=nginx
-        --set controller.service.loadBalancerIP={{ ingress_lb_ip }}
+      kubernetes.core.helm:
+        name: ingress-nginx
+        chart_ref: ingress-nginx/ingress-nginx
+        release_namespace: "{{ ingress_namespace }}"
+        create_namespace: true
+        wait: true
+        timeout: 600s
+        values:
+          controller:
+            service:
+              type: LoadBalancer
+              externalTrafficPolicy: Local
+              loadBalancerIP: "{{ ingress_lb_ip }}"
+            ingressClassResource:
+              default: true
+            ingressClass: nginx
 
     - name: Wait for ingress controller pod to be Ready
       command: >
