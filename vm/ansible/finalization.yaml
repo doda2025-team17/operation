@@ -33,22 +33,19 @@
         kubectl apply -f
         https://raw.githubusercontent.com/metallb/metallb/{{ metallb_version }}/config/manifests/metallb-native.yaml
 
-    - name: Wait for MetalLB controller to be Ready (up to 10 minutes)
+    - name: Wait for MetalLB controller to be Ready
       command: >
         kubectl wait --namespace {{ metallb_namespace }}
         --for=condition=Ready pod
-        -l component=controller
-        --timeout=600s
-      register: metallb_wait
-      retries: 3
-      delay: 30
-      until: metallb_wait.rc == 0
+        -l 'app=metallb,component=controller'
+        --timeout={{ metallb_wait_timeout }}
+      changed_when: false
 
-    - name: Wait for MetalLB speaker to be Ready
+    - name: Wait for MetalLB speakers to be Ready
       command: >
         kubectl wait --namespace {{ metallb_namespace }}
         --for=condition=Ready pod
-        -l component=speaker
+        -l 'app=metallb,component=speaker'
         --timeout={{ metallb_wait_timeout }}
       changed_when: false
 
