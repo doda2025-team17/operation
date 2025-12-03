@@ -47,6 +47,17 @@ spec:
             - name: http
               containerPort: {{ .Values.app.service.port }}
               protocol: TCP
+          {{- if or .Values.config.enabled .Values.secret.enabled }}
+          envFrom:
+            {{- if .Values.config.enabled }}
+            - configMapRef:
+                name: {{ printf "%s-config" (include "chart.fullname" .) }}
+            {{- end }}
+            {{- if .Values.secret.enabled }}
+            - secretRef:
+                name: {{ printf "%s-secret" (include "chart.fullname" .) }}
+            {{- end }}
+          {{- end }}
           env:
             {{- range $key, $value := .Values.app.env }}
             - name: {{ $key }}

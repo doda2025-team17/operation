@@ -25,7 +25,7 @@ app:
   image:
     repository: ghcr.io/doda2025-team17/app
     pullPolicy: IfNotPresent
-    tag: "v1.0.0"
+    tag: "latest"
   service:
     type: ClusterIP
     port: 8080
@@ -52,26 +52,26 @@ model:
   image:
     repository: ghcr.io/doda2025-team17/model-service
     pullPolicy: IfNotPresent
-    tag: "v1.0.0"
+    tag: "latest"
   service:
     port: 8081
   env:
     MODEL_SERVICE_PORT: "8081"
-    MODEL_URL: ""
+    MODEL_URL: "https://github.com/doda2025-team17/model-service/releases/download/v1.0.0/model-artifacts.tar.gz"
   resources: {}
   livenessProbe:
     httpGet:
-      path: /health
+      path: /apidocs
       port: http
   readinessProbe:
     httpGet:
-      path: /health
+      path: /apidocs
       port: http
   volumeMounts: []
   volumes: []
 
 ingress:
-  enabled: false
+  enabled: true
   className: ""
   annotations: {}
   hosts:
@@ -95,3 +95,14 @@ httpRoute:
         - path:
             type: PathPrefix
             value: /
+
+# Optional ConfigMap and Secret injected into the app (envFrom)
+config:
+  enabled: true
+  data:
+    APP_BANNER: "Spam Detector"
+
+secret:
+  enabled: true
+  stringData:
+    APP_SECRET_KEY: "changeme"
