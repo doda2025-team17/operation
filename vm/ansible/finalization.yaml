@@ -107,7 +107,7 @@
         fail_msg: "Ingress Service EXTERNAL-IP ({{ svc_ip.stdout }}) does not match expected {{ ingress_lb_ip }}"
         success_msg: "Ingress Service EXTERNAL-IP correctly set to {{ ingress_lb_ip }}"
 
-    # Step 22: Install and expose Kubernetes Dashboard
+    # Step 22: Install and show Kubernetes Dashboard
     - name: Add Helm repo for Kubernetes Dashboard
       command: helm repo add {{ kd_repo_name }} {{ kd_repo_url }}
       register: kd_repo_add
