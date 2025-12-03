@@ -1,0 +1,89 @@
+---
+# Step 23: Install Istio (with fixed LB IP via MetalLB)
+- name: Install and configure Istio service mesh
+  hosts: ctrl
+  become: yes
+  gather_facts: no
+
+  vars:
+    istio_version: "1.25.2"
+    istio_tgz: "istio-{{ istio_version }}-linux-amd64.tar.gz"
+    istio_url: "https://github.com/istio/istio/releases/download/{{ istio_version }}/{{ istio_tgz }}"
+    istio_root: "/opt/istio-{{ istio_version }}"
+    istio_bin: "/opt/istio-{{ istio_version }}/bin/istioctl"
+
+    # An address from the MetalLB pool
+    istio_gateway_ip: "192.168.56.96"
+
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+    PATH: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/istio-{{ istio_version }}/bin"
+
+  tasks:
+    - name: Ensure curl and tar are present
+      apt:
+        name: [curl, tar]
+        state: present
+        update_cache: yes
+
+    - name: Download Istio {{ istio_version }} if missing
+      get_url:
+        url: "{{ istio_url }}"
+        dest: "/tmp/{{ istio_tgz }}"
+        mode: "0644"
+      args:
+        creates: "/tmp/{{ istio_tgz }}"
+
+    - name: Unpack Istio under /opt
+      unarchive:
+        src: "/tmp/{{ istio_tgz }}"
+        dest: "/opt"
+        remote_src: yes
+      args:
+        creates: "{{ istio_root }}"
+
+    - name: Symlink istioctl into /usr/local/bin
+      file:
+        src: "{{ istio_bin }}"
+        dest: /usr/local/bin/istioctl
+        state: link
+        force: yes
+
+    - name: Add Istio bin dir to PATH for all users (profile.d)
+      copy:
+        dest: /etc/profile.d/istio.sh
+        mode: "0644"
+        content: |
+          # added by provisioning (feat-23)
+          export PATH=$PATH:{{ istio_root }}/bin
+
+    - name: Render custom IstioOperator manifest (fixed LoadBalancer IP)
+      template:
+        src: templates/istio-operator.yaml.j2
+        dest: /tmp/istio-operator.yaml
+        mode: "0644"
+
+    - name: Install or upgrade Istio with fixed ingressgateway IP
+      command: istioctl install -y -f /tmp/istio-operator.yaml
+
+    - name: Wait for istiod to be Available (up to 5m)
+      command: kubectl -n istio-system rollout status deploy/istiod --timeout=5m
+      changed_when: false
+
+    - name: Wait for istio-ingressgateway to be Available (up to 5m)
+      command: kubectl -n istio-system rollout status deploy/istio-ingressgateway --timeout=5m
+      changed_when: false
+
+    - name: Verify istio-ingressgateway has the expected EXTERNAL-IP
+      command: >
+        kubectl -n istio-system get svc istio-ingressgateway
+        -o jsonpath={.status.loadBalancer.ingress[0].ip}
+      register: gw_ip
+      changed_when: false
+
+    - name: Assert LoadBalancer IP matches requested value
+      assert:
+        that:
+          - gw_ip.stdout == istio_gateway_ip
+        fail_msg: "Istio ingressgateway EXTERNAL-IP ({{ gw_ip.stdout }}) != expected {{ istio_gateway_ip }}"
+        success_msg: "Istio ingressgateway EXTERNAL-IP correctly set to {{ istio_gateway_ip }}"
