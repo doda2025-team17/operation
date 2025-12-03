@@ -20,27 +20,29 @@
     PATH: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/istio-{{ istio_version }}/bin"
 
   tasks:
-    - name: Ensure curl and tar are present
-      apt:
-        name: [curl, tar]
-        state: present
-        update_cache: yes
+    - name: Check if Istio tarball already exists
+      stat:
+        path: "/tmp/{{ istio_tgz }}"
+      register: istio_tgz_stat
 
-    - name: Download Istio {{ istio_version }} if missing
+    - name: Download Istio {{ istio_version }}
       get_url:
         url: "{{ istio_url }}"
         dest: "/tmp/{{ istio_tgz }}"
         mode: "0644"
-      args:
-        creates: "/tmp/{{ istio_tgz }}"
+      when: not istio_tgz_stat.stat.exists
+
+    - name: Check if Istio root dir exists
+      stat:
+        path: "{{ istio_root }}"
+      register: istio_root_stat
 
     - name: Unpack Istio under /opt
       unarchive:
         src: "/tmp/{{ istio_tgz }}"
         dest: "/opt"
         remote_src: yes
-      args:
-        creates: "{{ istio_root }}"
+      when: not istio_root_stat.stat.exists
 
     - name: Symlink istioctl into /usr/local/bin
       file:
