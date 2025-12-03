@@ -13,7 +13,7 @@
     metallb_pool_end:   "192.168.56.99"
     metallb_wait_timeout: "180s"
 
-    # Ingress vars
+    # Step 21 vars
     ingress_namespace: "ingress-nginx"
     ingress_lb_ip: "192.168.56.95"
     ingress_wait_timeout: "240s"
@@ -31,11 +31,6 @@
 
   tasks:
     # Step 20: MetalLB install
-    - name: Check that nodes are visible
-      command: kubectl get nodes
-      register: nodes_out
-      changed_when: false
-
     - name: Apply MetalLB operator (native)
       command: >
         kubectl apply -f
@@ -45,7 +40,7 @@
       command: >
         kubectl wait --namespace {{ metallb_namespace }}
         --for=condition=Ready pod
-        -l 'app=metallb,component=controller'
+        -l app=metallb,component=controller
         --timeout={{ metallb_wait_timeout }}
       changed_when: false
 
@@ -53,7 +48,7 @@
       command: >
         kubectl wait --namespace {{ metallb_namespace }}
         --for=condition=Ready pod
-        -l 'app=metallb,component=speaker'
+        -l app=metallb,component=speaker
         --timeout={{ metallb_wait_timeout }}
       changed_when: false
 
@@ -66,7 +61,7 @@
     - name: Apply MetalLB address pool configuration
       command: kubectl apply -f /tmp/metallb-config.yaml
 
-    # Step 21: NGINX Ingress (Helm, idempotent)
+    # Step 21: NGINX Ingress
     - name: Add ingress-nginx Helm repo
       kubernetes.core.helm_repository:
         name: ingress-nginx
@@ -79,7 +74,6 @@
         chart_ref: ingress-nginx/ingress-nginx
         release_namespace: "{{ ingress_namespace }}"
         create_namespace: true
-        wait: true
         timeout: 600s
         values:
           controller:
