@@ -53,7 +53,7 @@
     - name: Apply MetalLB address pool configuration
       command: kubectl apply -f /tmp/metallb-config.yaml
 
-    # Step 21: NGINX Ingress (Helm, idempotent)
+    # Step 21: NGINX Ingress
     - name: Add ingress-nginx Helm repo
       kubernetes.core.helm_repository:
         name: ingress-nginx
