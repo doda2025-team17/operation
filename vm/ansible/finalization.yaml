@@ -13,7 +13,7 @@
     metallb_pool_end:   "192.168.56.99"
     metallb_wait_timeout: "180s"
 
-    # Step 21 vars
+    # Ingress vars
     ingress_namespace: "ingress-nginx"
     ingress_lb_ip: "192.168.56.95"
     ingress_wait_timeout: "240s"
