@@ -33,13 +33,6 @@
         kubectl apply -f
         https://raw.githubusercontent.com/metallb/metallb/{{ metallb_version }}/config/manifests/metallb-native.yaml
 
-    - name: Create MetalLB memberlist secret if missing
-      shell: |
-        kubectl -n {{ metallb_namespace }} get secret memberlist >/dev/null 2>&1 || \
-        kubectl -n {{ metallb_namespace }} create secret generic memberlist \
-          --from-literal=secretkey="$(openssl rand -base64 128)"
-      changed_when: false
-
     - name: Wait for MetalLB controller to be Ready (up to 10 minutes)
       command: kubectl wait --namespace metallb-system --for=condition=Ready pod -l component=controller --timeout=600s
       register: metallb_wait
