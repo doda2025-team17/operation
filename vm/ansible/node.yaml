@@ -1,19 +1,18 @@
 ---
 # Worker node specific setup
 - name: Worker node setup
-  hosts: all
+  hosts: nodes
   become: yes
   tasks:
-    # Generate Join Command
+    # Step 18: Generate Join Command
     - name: Generate kubeadm join command on controller
-      become: yes
       command: kubeadm token create --print-join-command
       delegate_to: ctrl
       register: kubeadm_join_cmd
       run_once: true
 
-    # Join worker node to the cluster
+    # Step 19: Join worker node to the cluster
     - name: Join worker node to Kubernetes cluster
-      ansible.builtin.shell: "{{ kubeadm_join_cmd.stdout }}"
+      shell: "{{ kubeadm_join_cmd.stdout }}"
       args:
         creates: /etc/kubernetes/kubelet.conf

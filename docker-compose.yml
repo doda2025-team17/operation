@@ -2,6 +2,7 @@ services:
   app-service:
     image: ghcr.io/doda2025-team17/app:latest
     container_name: app-service
+    restart: unless-stopped
     ports:
       - "${APP_HOST_PORT}:${APP_CONTAINER_PORT}"
     environment:
@@ -15,8 +16,8 @@ services:
   model-service:
     image: ghcr.io/doda2025-team17/model-service:latest
     container_name: model-service
-    ports:
-      - "${MODEL_HOST_PORT}:${MODEL_CONTAINER_PORT}"
+    restart: unless-stopped
+    # NO ports section - only accessible internally via Docker network
     environment:
       - MODEL_SERVICE_PORT=${MODEL_CONTAINER_PORT}
       - MODEL_URL=${MODEL_URL}
