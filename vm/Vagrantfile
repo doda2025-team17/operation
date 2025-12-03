@@ -1,76 +1,80 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
-# Configurable number of worker nodes
 NUM_WORKERS = 2
+CTRL_CPU = 1
+NODE_CPU = 2
+CTRL_MEMORY = "4096"
+NODE_MEMORY = "6144"
+
+system("VBoxManage dhcpserver remove --network=HostInterfaceNetworking-vboxnet0 2>/dev/null")
 
 Vagrant.configure("2") do |config|
-  # Base box for all VMs
   config.vm.box = "bento/ubuntu-24.04"
-  config.vm.boot_timeout = 300  # 5 minutes for initial boot
-
-  # Control Node Configuration
+  
+  # Control Node
   config.vm.define "ctrl" do |ctrl|
     ctrl.vm.hostname = "ctrl"
+    ctrl.vm.network "private_network", ip: "192.168.56.100"
     
-    # Host-only network for internal cluster communication
-    # Fixed IP as per assignment requirements
-    ctrl.vm.network "private_network", ip: "192.168.56.100", virtualbox__hostonlyadapter: "VirtualBox Host-Only Ethernet Adapter #2"
-    
-    # VirtualBox specific settings
     ctrl.vm.provider "virtualbox" do |vb|
       vb.name = "k8s-ctrl"
-      vb.memory = "4096"
-      vb.cpus = 1
-    end
-    
-    # Common provisioning first
-    ctrl.vm.provision "ansible_local" do |ansible|
-      ansible.playbook = "ansible/general.yaml"
-      ansible.extra_vars = { 
-        hostname: "ctrl",
-        num_workers: NUM_WORKERS
-      }
-    end
-    
-    # Then control-specific provisioning
-    ctrl.vm.provision "ansible_local" do |ansible|
-      ansible.playbook = "ansible/ctrl.yaml"
-    end
-    ctrl.vm.provision "ansible_local" do |ansible|
-        ansible.playbook = "ansible/finalization.yaml"
+      vb.memory = CTRL_MEMORY
+      vb.cpus = CTRL_CPU
     end
   end
-
-  # Worker Nodes Configuration
+  
+  # Worker Nodes
   (1..NUM_WORKERS).each do |i|
     config.vm.define "node-#{i}" do |node|
       node.vm.hostname = "node-#{i}"
+      node.vm.network "private_network", ip: "192.168.56.#{100 + i}"
       
-      # Host-only network - sequential IPs starting from .101
-      # Fixed IPs as per assignment requirements
-      node.vm.network "private_network", ip: "192.168.56.#{100 + i}", virtualbox__hostonlyadapter: "VirtualBox Host-Only Ethernet Adapter #2"
-      
-      # VirtualBox specific settings
       node.vm.provider "virtualbox" do |vb|
         vb.name = "k8s-node-#{i}"
-        vb.memory = "6144"
-        vb.cpus = 2
+        vb.memory = NODE_MEMORY
+        vb.cpus = NODE_CPU
       end
       
-      # Common provisioning first
-      node.vm.provision "ansible_local" do |ansible|
-        ansible.playbook = "ansible/general.yaml"
-        ansible.extra_vars = { 
-          hostname: "node-#{i}",
-          num_workers: NUM_WORKERS
-        }
-      end
-      
-      # Then node-specific provisioning
-      node.vm.provision "ansible_local" do |ansible|
-        ansible.playbook = "ansible/node.yaml"
+      # Only provision after last node is up
+      if i == NUM_WORKERS
+        node.vm.provision "ansible" do |ansible|
+          ansible.limit = "all"  # Provision all VMs at once
+          ansible.playbook = "ansible/master.yaml"
+          ansible.groups = {
+            "ctrl" => ["ctrl"],
+            "nodes" => (1..NUM_WORKERS).map { |j| "node-#{j}" },
+            "k8s_cluster:children" => ["ctrl", "nodes"]
+          }
+          ansible.extra_vars = {
+            num_workers: NUM_WORKERS
+          }
+        end
       end
     end
+  end
+  
+  # Generate inventory.cfg file
+  config.trigger.after :provision do |trigger|
+    trigger.name = "Generate Ansible Inventory File"
+    trigger.info = "Creating inventory.cfg with all cluster nodes"
+    
+    inventory_content = <<~EOF
+[ctrl]
+ctrl ansible_host=192.168.56.100 ansible_user=vagrant
+
+[nodes]
+#{ (1..NUM_WORKERS).map { |i| "node-#{i} ansible_host=192.168.56.#{100 + i} ansible_user=vagrant" }.join("\n") }
+
+[k8s_cluster:children]
+ctrl
+nodes
+
+[all:vars]
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+EOF
+    
+    File.write("inventory.cfg", inventory_content)
+    puts "Generated inventory.cfg with #{NUM_WORKERS} worker nodes"
   end
 end

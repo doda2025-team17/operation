@@ -26,45 +26,21 @@
         key: "{{ lookup('file', item) }}"
       loop: "{{ keys }}"
 
+    # Step 4: Copy provided SSH host keys
+    - name: Copy provided SSH host keys
+      copy:
+        src: "ssh-keys/host-keys/{{ ansible_hostname }}/"
+        dest: /etc/ssh/
+        owner: root
+        group: root
+        mode: '0600'
+      notify: restart ssh
+
     - name: Ensure ssh service is enabled and running
       systemd:
         name: ssh
         state: started
         enabled: yes
-
-    # Step 4.1: Ensure inter-node SSH key exists for vagrant
-    - name: 1. Ensure SSH key pair exists for the vagrant user on all VMs
-      become: true
-      become_user: vagrant # Run this as the 'vagrant' user
-      ansible.builtin.openssh_keypair:
-        path: /home/vagrant/.ssh/id_rsa
-        state: present
-        mode: '0600'
-
-    - name: 2a. Create a directory on the host for collecting keys
-      ansible.builtin.file:
-        path: /vagrant/ansible/vm-ssh-keys/
-        state: directory
-      delegate_to: localhost # This runs on your host machine to avoid race conditions
-      run_once: true         # Only needs to run once for the whole playbook
-      
-    - name: 2b. Collect the public key from each VM into the shared folder
-      become: true
-      become_user: vagrant
-      ansible.builtin.fetch:
-        src: /home/vagrant/.ssh/id_rsa.pub
-        dest: /vagrant/ansible/vm-ssh-keys/{{ inventory_hostname }}.pub
-        flat: yes
-
-    - name: 3. Distribute all collected public keys to all VMs
-      become: true
-      become_user: vagrant
-      ansible.posix.authorized_key:
-        user: vagrant
-        key: "{{ lookup('file', item) }}"
-        state: present
-      with_fileglob:
-        - "/vagrant/ansible/vm-ssh-keys/*.pub"
 
     # Step 5: Disable SWAP
     - name: Disable swap at runtime
@@ -210,3 +186,10 @@
         state: started
         enabled: yes
         daemon_reload: yes
+
+  # Handlers for service restarts
+  handlers:
+    - name: restart ssh
+      systemd:
+        name: ssh
+        state: restarted

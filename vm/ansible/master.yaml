@@ -1,0 +1,12 @@
+---
+- name: Import general setup for all nodes
+  import_playbook: general.yaml
+
+- name: Import control plane setup
+  import_playbook: ctrl.yaml
+
+- name: Import worker node setup  
+  import_playbook: node.yaml
+
+- name: Import finalization steps
+  import_playbook: finalization.yaml
