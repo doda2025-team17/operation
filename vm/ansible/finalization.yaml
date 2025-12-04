@@ -13,7 +13,7 @@
     metallb_pool_end:   "192.168.56.99"
     metallb_wait_timeout: "180s"
 
-    # Ingress vars
+    # Step 21 vars
     ingress_namespace: "ingress-nginx"
     ingress_lb_ip: "192.168.56.95"
     ingress_wait_timeout: "240s"
@@ -31,11 +31,6 @@
 
   tasks:
     # Step 20: MetalLB install
-    - name: Check that nodes are visible
-      command: kubectl get nodes
-      register: nodes_out
-      changed_when: false
-
     - name: Apply MetalLB operator (native)
       command: >
         kubectl apply -f
@@ -45,7 +40,7 @@
       command: >
         kubectl wait --namespace {{ metallb_namespace }}
         --for=condition=Ready pod
-        -l 'app=metallb,component=controller'
+        -l app=metallb,component=controller
         --timeout={{ metallb_wait_timeout }}
       changed_when: false
 
@@ -53,7 +48,7 @@
       command: >
         kubectl wait --namespace {{ metallb_namespace }}
         --for=condition=Ready pod
-        -l 'app=metallb,component=speaker'
+        -l app=metallb,component=speaker
         --timeout={{ metallb_wait_timeout }}
       changed_when: false
 
@@ -66,7 +61,7 @@
     - name: Apply MetalLB address pool configuration
       command: kubectl apply -f /tmp/metallb-config.yaml
 
-    # Step 21: NGINX Ingress (Helm, idempotent)
+    # Step 21: NGINX Ingress
     - name: Add ingress-nginx Helm repo
       kubernetes.core.helm_repository:
         name: ingress-nginx
@@ -79,7 +74,6 @@
         chart_ref: ingress-nginx/ingress-nginx
         release_namespace: "{{ ingress_namespace }}"
         create_namespace: true
-        wait: true
         timeout: 600s
         values:
           controller:
@@ -113,23 +107,18 @@
         fail_msg: "Ingress Service EXTERNAL-IP ({{ svc_ip.stdout }}) does not match expected {{ ingress_lb_ip }}"
         success_msg: "Ingress Service EXTERNAL-IP correctly set to {{ ingress_lb_ip }}"
 
-    # Step 22: Install and expose Kubernetes Dashboard
+    # Step 22: Install and show Kubernetes Dashboard
     - name: Add Helm repo for Kubernetes Dashboard
-      command: helm repo add {{ kd_repo_name }} {{ kd_repo_url }}
-      register: kd_repo_add
-      changed_when: "'has been added' in kd_repo_add.stdout or 'updated' in kd_repo_add.stdout or kd_repo_add.rc == 0"
+      kubernetes.core.helm_repository:
+        name: "{{ kd_repo_name }}"
+        repo_url: "{{ kd_repo_url }}"
 
-    - name: Helm repo update
-      command: helm repo update
-      changed_when: false
-
-    - name: Install or upgrade Kubernetes Dashboard chart
-      command: >
-        helm upgrade --install {{ kd_release }}
-        {{ kd_repo_name }}/kubernetes-dashboard
-        --namespace {{ kd_ns }} --create-namespace
-      register: kd_install
-      changed_when: "'deployed' in kd_install.stdout or 'upgraded' in kd_install.stdout"
+    - name: Install Kubernetes Dashboard
+      kubernetes.core.helm:
+        name: "{{ kd_release }}"
+        chart_ref: "{{ kd_repo_name }}/kubernetes-dashboard"
+        release_namespace: "{{ kd_ns }}"
+        create_namespace: true
 
     # Ensure Python client for Kubernetes is available (required by kubernetes.core.k8s)
     - name: Install python3-kubernetes via apt
@@ -190,10 +179,9 @@
                           port:
                             number: 443
 
-    - name: Wait for Dashboard pods to be Ready
+    - name: Wait for any Dashboard pod to be Ready (up to 5m)
       command: >
         kubectl wait -n {{ kd_ns }} --for=condition=Ready pod
-        -l "app.kubernetes.io/name=kubernetes-dashboard"
-        --timeout=180s
+        -l app.kubernetes.io/instance={{ kd_release }}
+        --timeout=300s
       changed_when: false
-      failed_when: false
