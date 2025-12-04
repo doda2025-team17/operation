@@ -12,10 +12,26 @@ system("VBoxManage dhcpserver remove --network=HostInterfaceNetworking-vboxnet0 
 Vagrant.configure("2") do |config|
   config.vm.box = "bento/ubuntu-24.04"
   
+  # Create shared folder on host
+  SHARED_DIR = File.expand_path("~/k8s-shared-storage")
+  Dir.mkdir(SHARED_DIR) unless Dir.exist?(SHARED_DIR)
+  
+  # Shared folder configuration in a lambda
+  configure_shared_folder = lambda do |vm|
+    vm.synced_folder SHARED_DIR, "/mnt/shared",
+      type: "virtualbox",
+      owner: "vagrant",
+      group: "vagrant",
+      mount_options: ["dmode=775", "fmode=664"]
+  end
+  
   # Control Node
   config.vm.define "ctrl" do |ctrl|
     ctrl.vm.hostname = "ctrl"
     ctrl.vm.network "private_network", ip: "192.168.56.100"
+    
+    # Mount shared folder
+    configure_shared_folder.call(ctrl.vm)
     
     ctrl.vm.provider "virtualbox" do |vb|
       vb.name = "k8s-ctrl"
@@ -29,6 +45,9 @@ Vagrant.configure("2") do |config|
     config.vm.define "node-#{i}" do |node|
       node.vm.hostname = "node-#{i}"
       node.vm.network "private_network", ip: "192.168.56.#{100 + i}"
+      
+      # Mount same shared folder on workers
+      configure_shared_folder.call(node.vm)
       
       node.vm.provider "virtualbox" do |vb|
         vb.name = "k8s-node-#{i}"
