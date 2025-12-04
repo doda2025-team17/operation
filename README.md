@@ -79,76 +79,68 @@ This design follows the **API Gateway pattern** where the frontend service acts 
 For Assignment 1, we have extended the application of the SMS spam detection system with multi-architecture Docker images, a Maven library with version-aware utilities, automated CI/CD workflows, and flexible Docker Compose orchestration.
 More information on the containerized services can be found at the [app repository](https://github.com/doda2025-team17/app) and [model-service repository](https://github.com/doda2025-team17/model-service), and details about the version-aware Maven library can be found at the [lib-version repository](https://github.com/doda2025-team17/lib-version).
 
-### Assignment 2
+# Assignment 2 - Kubernetes Infrastructure
 
-This directory contains the infrastructure code to spin up a small Kubernetes lab using **Vagrant**, **VirtualBox**, and **Ansible**.  
-The environment includes:
+This directory contains the infrastructure code to spin up a Kubernetes cluster using **Vagrant**, **VirtualBox**, and **Ansible**.
 
-- **Control-plane node**: `ctrl`
-- **Worker node(s)**: e.g. `node-1`
-- A **kubeadm**-based Kubernetes cluster
-- **Flannel** CNI
-- **MetalLB** as a bare‑metal LoadBalancer
-- **NGINX Ingress Controller** (note: ingress is not fully working on all machines yet)
-  - To test the ingress controller go to branch Feat 21: https://github.com/doda2025-team17/operation.git
+## Environment Overview
 
-All of this is orchestrated via the Vagrantfile and the Ansible playbooks in `ansible/`.
+| Component | Description |
+|-----------|-------------|
+| Control-plane | `ctrl` (192.168.56.100) |
+| Worker nodes | `node-1` (192.168.56.101), `node-2` (192.168.56.102) |
+| Kubernetes | kubeadm-based cluster (v1.32.4) |
+| CNI | Flannel |
+| Load Balancer | MetalLB (IP range: 192.168.56.90-99) |
+| Ingress | NGINX Ingress Controller (192.168.56.95) |
+| Service Mesh | Istio (192.168.56.96) |
+| Dashboard | Kubernetes Dashboard (dashboard.local) |
 
-### 1. How to Run the Environment
+## Prerequisites
 
-From your **host machine**, in this directory:
+- VirtualBox (6.1+)
+- Vagrant (2.3+)
+- Ansible (2.10+)
+- kubectl
 
+### VirtualBox DHCP Conflict Fix
+
+If you experience networking issues, remove any conflicting DHCP server:
 ```bash
-cd operation/vm
+VBoxManage dhcpserver remove --network=HostInterfaceNetworking-vboxnet0
 ```
 
-#### Step 1 – Bring up the VMs
+This is automatically handled in the Vagrantfile, but may need manual execution on some systems.
 
+## Quick Start
+
+### 1. Start the Cluster
 ```bash
+cd vm/
 vagrant up
 ```
 
-This creates and boots `ctrl` and `node-1`.
+This automatically:
+- Creates all VMs (ctrl, node-1, node-2)
+- Runs all Ansible playbooks (general, ctrl, node, finalization, istio)
+- Installs Kubernetes, Flannel, MetalLB, Ingress, Dashboard, and Istio
 
-#### Step 2 – Provision the VMs
+**Note:** First run takes 15-20 minutes.
 
+### Re-provisioning (if needed)
+
+If provisioning fails or you need to re-run:
 ```bash
 vagrant provision
 ```
 
-This runs the Ansible playbooks that:
-
-- Configure OS and Kubernetes prerequisites.
-- Initialize the control-plane.
-- Join workers.
-- Install Flannel and MetalLB.
-
----
-
-### 2. Troubleshooting Flow
-
-If provisioning fails (for example on MetalLB or due to SSH issues between nodes), a sequence that often fixes things is:
-
+Or run specific playbooks manually:
 ```bash
-cd operation/vm
+# Only finalization (MetalLB, Ingress, Dashboard)
+ansible-playbook -i inventory.cfg ansible/finalization.yaml \
+  --private-key=.vagrant/machines/ctrl/virtualbox/private_key -u vagrant
 
-# 1) SSH into the worker VM
-vagrant ssh node-1
-
-# 2) From node-1, confirm you can SSH into ctrl by hostname
-ssh ctrl
-
-# 3) Exit twice back to the host
-exit    # back to node-1
-exit    # back to host
-
-# 4) Re-run targeted provisioning on ctrl and node-1
-vagrant provision ctrl node-1
+# Only Istio
+ansible-playbook -i inventory.cfg ansible/istio.yaml \
+  --private-key=.vagrant/machines/ctrl/virtualbox/private_key -u vagrant
 ```
-
-This sequence:
-
-- Confirms inter-node SSH connectivity.
-- Re-runs the control-plane and worker Ansible roles until the cluster converges.
-
----
