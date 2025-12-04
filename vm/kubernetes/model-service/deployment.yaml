@@ -36,14 +36,12 @@ spec:
             - name: shared-models
               mountPath: /models
           readinessProbe:
-            httpGet:
-              path: /health
+            tcpSocket:
               port: 8081
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
-            httpGet:
-              path: /health
+            tcpSocket:
               port: 8081
             initialDelaySeconds: 15
             periodSeconds: 20
