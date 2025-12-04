@@ -7,19 +7,35 @@
 
   vars:
     istio_version: "1.25.2"
-    istio_tgz: "istio-{{ istio_version }}-linux-amd64.tar.gz"
-    istio_url: "https://github.com/istio/istio/releases/download/{{ istio_version }}/{{ istio_tgz }}"
-    istio_root: "/opt/istio-{{ istio_version }}"
-    istio_bin: "/opt/istio-{{ istio_version }}/bin/istioctl"
-
-    # An address from the MetalLB pool
     istio_gateway_ip: "192.168.56.96"
+    istio_root: "/opt/istio-{{ istio_version }}"
+    istio_bin: "{{ istio_root }}/bin/istioctl"
 
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf
     PATH: "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/istio-{{ istio_version }}/bin"
 
   tasks:
+    - name: Detect system architecture
+      command: uname -m
+      register: arch_result
+      changed_when: false
+
+    - name: Set architecture variable
+      set_fact:
+        istio_arch: "{{ 'arm64' if arch_result.stdout == 'aarch64' else 'amd64' }}"
+
+    - name: Set Istio download URL
+      set_fact:
+        istio_tgz: "istio-{{ istio_version }}-linux-{{ istio_arch }}.tar.gz"
+        istio_url: "https://github.com/istio/istio/releases/download/{{ istio_version }}/istio-{{ istio_version }}-linux-{{ istio_arch }}.tar.gz"
+
+    - name: Download Istio {{ istio_version }}
+      get_url:
+        url: "{{ istio_url }}"
+        dest: "/tmp/{{ istio_tgz }}"
+        mode: "0644"
+
     - name: Check if Istio tarball already exists
       stat:
         path: "/tmp/{{ istio_tgz }}"
