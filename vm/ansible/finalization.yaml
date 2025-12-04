@@ -1,12 +1,12 @@
 ---
-# Steps 20–21: MetalLB + NGINX Ingress
-- name: Install and configure MetalLB and Ingress
+# Steps 20–22: MetalLB, Ingress, and Dashboard setup
+- name: Install and configure MetalLB, Ingress, and Dashboard
   hosts: ctrl
   become: yes
   gather_facts: no
 
   vars:
-    # Step 20 vars
+    # MetalLB settings
     metallb_version: "v0.14.9"
     metallb_namespace: "metallb-system"
     metallb_pool_start: "192.168.56.90"
@@ -17,6 +17,14 @@
     ingress_namespace: "ingress-nginx"
     ingress_lb_ip: "192.168.56.95"
     ingress_wait_timeout: "240s"
+
+    # Dashboard settings
+    kd_ns: kubernetes-dashboard
+    kd_release: kubernetes-dashboard
+    kd_repo_name: kubernetes-dashboard
+    kd_repo_url: https://kubernetes.github.io/dashboard
+    ingress_host: dashboard.local
+    ingress_class: nginx
 
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf
@@ -98,3 +106,82 @@
           - svc_ip.stdout == ingress_lb_ip
         fail_msg: "Ingress Service EXTERNAL-IP ({{ svc_ip.stdout }}) does not match expected {{ ingress_lb_ip }}"
         success_msg: "Ingress Service EXTERNAL-IP correctly set to {{ ingress_lb_ip }}"
+
+    # Step 22: Install and show Kubernetes Dashboard
+    - name: Add Helm repo for Kubernetes Dashboard
+      kubernetes.core.helm_repository:
+        name: "{{ kd_repo_name }}"
+        repo_url: "{{ kd_repo_url }}"
+
+    - name: Install Kubernetes Dashboard
+      kubernetes.core.helm:
+        name: "{{ kd_release }}"
+        chart_ref: "{{ kd_repo_name }}/kubernetes-dashboard"
+        release_namespace: "{{ kd_ns }}"
+        create_namespace: true
+
+    # Ensure Python client for Kubernetes is available (required by kubernetes.core.k8s)
+    - name: Install python3-kubernetes via apt
+      apt:
+        name: python3-kubernetes
+        state: present
+        update_cache: yes
+
+    - name: Create admin ServiceAccount
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ServiceAccount
+          metadata:
+            name: admin-user
+            namespace: "{{ kd_ns }}"
+
+    - name: Bind admin-user to cluster-admin
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRoleBinding
+          metadata:
+            name: admin-user-binding
+          subjects:
+            - kind: ServiceAccount
+              name: admin-user
+              namespace: "{{ kd_ns }}"
+          roleRef:
+            kind: ClusterRole
+            name: cluster-admin
+            apiGroup: rbac.authorization.k8s.io
+
+    - name: Apply Dashboard Ingress
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: kubernetes-dashboard
+            namespace: "{{ kd_ns }}"
+            annotations:
+              nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+          spec:
+            ingressClassName: "{{ ingress_class }}"
+            rules:
+              - host: "{{ ingress_host }}"
+                http:
+                  paths:
+                    - path: /
+                      pathType: Prefix
+                      backend:
+                        service:
+                          name: kubernetes-dashboard-kong-proxy
+                          port:
+                            number: 443
+
+    - name: Wait for any Dashboard pod to be Ready (up to 5m)
+      command: >
+        kubectl wait -n {{ kd_ns }} --for=condition=Ready pod
+        -l app.kubernetes.io/instance={{ kd_release }}
+        --timeout=300s
+      changed_when: false
