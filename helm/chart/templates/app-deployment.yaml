@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sms-app.app.name" . }}
+  namespace: {{ .Values.namespace.name | default .Release.Namespace }}
+  labels:
+    {{- include "sms-app.componentLabels" (dict "context" . "name" (include "sms-app.app.name" .) "component" "app") | nindent 4 }}
+spec:
+  replicas: {{ .Values.app.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "sms-app.app.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        {{- include "sms-app.componentLabels" (dict "context" . "name" (include "sms-app.app.name" .) "component" "app") | nindent 8 }}
+    spec:
+      containers:
+        - name: app-service
+          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}"
+          imagePullPolicy: {{ .Values.app.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.app.containerPort }}
+          env:
+            - name: APP_SERVER_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "sms-app.fullname" . }}-config
+                  key: APP_SERVER_PORT
+            - name: MODEL_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "sms-app.fullname" . }}-config
+                  key: MODEL_HOST
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "sms-app.fullname" . }}-secrets
+                  key: SMTP_PASSWORD
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.app.readinessProbe.path }}
+              port: {{ .Values.app.containerPort }}
+            initialDelaySeconds: {{ .Values.app.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.app.readinessProbe.periodSeconds }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.app.livenessProbe.path }}
+              port: {{ .Values.app.containerPort }}
+            initialDelaySeconds: {{ .Values.app.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.app.livenessProbe.periodSeconds }}

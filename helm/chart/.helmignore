@@ -1,0 +1,11 @@
+# Common Helm chart build ignores
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.bak
+*.tmp
+*.orig
+*.log
+charts/
+tmp/

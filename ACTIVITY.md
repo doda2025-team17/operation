@@ -33,7 +33,8 @@ No work
 ### Nicholas
 
 - Attended team meetings on Tuesday and Friday.
-- Responsible for step 1 and 2.
+- Responsible for step 1 and 2. (PR [#5] https://github.com/doda2025-team17/app/pull/5)
+- Help finish the README (PR [#3] https://github.com/doda2025-team17/operation/pull/3)
 
 ## Week Q4.3 (Nov. 21 - 27)
 
@@ -66,8 +67,9 @@ No work
 ### Nicholas
 
 - Attended the meetings on Sunday and Thursday.
-- Responsible for steps 13 - 17
+- Responsible for steps 13 - 17 (in PR's [#11] https://github.com/doda2025-team17/operation/pull/11), [#12] https://github.com/doda2025-team17/operation/pull/12, [#13] https://github.com/doda2025-team17/operation/pull/13, and [#14] https://github.com/doda2025-team17/operation/pull/14.
 - Reviewed PR's from step 7-12, and some others.
+- Updated the README for Assignment 2.
 
 ## Week Q4.4 (Nov. 28 - Dec. 4)
 
