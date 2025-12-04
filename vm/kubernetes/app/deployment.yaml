@@ -31,7 +31,7 @@ spec:
               valueFrom:
                 configMapKeyRef:
                   name: app-config
-                  key: MODEL_URL
+                  key: MODEL_HOST
             - name: SMTP_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -39,13 +39,13 @@ spec:
                   key: SMTP_PASSWORD
           readinessProbe:
             httpGet:
-              path: /health
+              path: /
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /health
+              path: /
               port: 8080
             initialDelaySeconds: 15
             periodSeconds: 20
