@@ -1,0 +1,5 @@
+# TOOD: Every file in kubernetes/ should be moved to Helm chart structure.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sms-app

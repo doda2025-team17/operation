@@ -1,0 +1,12 @@
+# Exposes the app-service internally within the sms-app namespace
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-service
+  namespace: sms-app
+spec:
+  selector:
+    app: app-service
+  ports:
+    - port: 80
+      targetPort: 8080

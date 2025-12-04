@@ -1,0 +1,42 @@
+# Helm implementation should use values.yaml for configuration
+# This means it will replace the hardcoded values with placeholders, so it's fine to use them for now.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: model-service
+  namespace: sms-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: model-service
+  template:
+    metadata:
+      labels:
+        app: model-service
+    spec:
+      containers:
+        - name: model-service
+          image: ghcr.io/doda2025-team17/model-service:latest
+          ports:
+            - containerPort: 8081
+          env:
+            - name: MODEL_SERVICE_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: MODEL_SERVICE_PORT
+            - name: MODEL_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: MODEL_URL
+          volumeMounts:
+            - name: shared-models
+              mountPath: /models
+      volumes:
+        - name: shared-models
+          hostPath:
+            path: /mnt/shared/models
+            type: DirectoryOrCreate
