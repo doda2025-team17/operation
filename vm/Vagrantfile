@@ -16,17 +16,22 @@ Vagrant.configure("2") do |config|
   SHARED_DIR = File.expand_path("~/k8s-shared-storage")
   Dir.mkdir(SHARED_DIR) unless Dir.exist?(SHARED_DIR)
   
+  # Shared folder configuration in a lambda
+  configure_shared_folder = lambda do |vm|
+    vm.synced_folder SHARED_DIR, "/mnt/shared",
+      type: "virtualbox",
+      owner: "vagrant",
+      group: "vagrant",
+      mount_options: ["dmode=775", "fmode=664"]
+  end
+  
   # Control Node
   config.vm.define "ctrl" do |ctrl|
     ctrl.vm.hostname = "ctrl"
     ctrl.vm.network "private_network", ip: "192.168.56.100"
     
     # Mount shared folder
-    ctrl.vm.synced_folder SHARED_DIR, "/mnt/shared", 
-      type: "virtualbox",
-      owner: "vagrant",
-      group: "vagrant",
-      mount_options: ["dmode=775", "fmode=664"]
+    configure_shared_folder.call(ctrl.vm)
     
     ctrl.vm.provider "virtualbox" do |vb|
       vb.name = "k8s-ctrl"
@@ -42,11 +47,7 @@ Vagrant.configure("2") do |config|
       node.vm.network "private_network", ip: "192.168.56.#{100 + i}"
       
       # Mount same shared folder on workers
-      node.vm.synced_folder SHARED_DIR, "/mnt/shared",
-        type: "virtualbox",
-        owner: "vagrant",
-        group: "vagrant",
-        mount_options: ["dmode=775", "fmode=664"]
+      configure_shared_folder.call(node.vm)
       
       node.vm.provider "virtualbox" do |vb|
         vb.name = "k8s-node-#{i}"
