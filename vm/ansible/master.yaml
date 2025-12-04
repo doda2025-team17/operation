@@ -10,3 +10,6 @@
 
 - name: Import finalization steps
   import_playbook: finalization.yaml
+
+- name: Import Istio setup
+  import_playbook: istio.yaml
