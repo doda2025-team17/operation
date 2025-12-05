@@ -79,3 +79,26 @@ ingress:
         - path: /
           pathType: Prefix
   tls: []
+
+# Monitoring / Prometheus setup
+monitoring:
+  enabled: true
+  serviceMonitor:
+    labelKey: monitoring
+    labelValue: sms-app
+    namespace: sms-app
+
+kube-prometheus-stack:
+  enabled: true
+  alertmanager:
+    enabled: false
+  grafana:
+    enabled: false
+  prometheus:
+    prometheusSpec:
+      serviceMonitorSelector:
+        matchLabels:
+          monitoring: sms-app
+      serviceMonitorNamespaceSelector:
+        matchNames:
+          - sms-app
