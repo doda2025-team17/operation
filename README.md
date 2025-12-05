@@ -12,27 +12,26 @@
 
    * [Assignment 1](#assignment-1)
    * [Assignment 2 - Kubernetes Infrastructure](#assignment-2---kubernetes-infrastructure)
-
-      * [Environment Overview](#environment-overview)
-      * [Prerequisites](#prerequisites-1)
-      * [Quick Start](#quick-start-1)
+   * [Assignment 3](#assignment-3)
 
 # Operation
 
 This organization contains a machine learning-based SMS spam detection system with a web interface.
 
-## Architecture Overview
+# Architecture Overview
 
 This system has four repositories, found at these links:
 
-* **app** ([https://github.com/doda2025-team17/app/releases/tag/v1.0.0](https://github.com/doda2025-team17/app/releases/tag/v1.0.0)): Spring Boot web application as the frontend and acting as an API gateway
-* **model-service** ([https://github.com/doda2025-team17/model-service/releases/tag/v1.0.0](https://github.com/doda2025-team17/model-service/releases/tag/v1.0.0)): Python-based machine learning service for spam detection
-* **lib-version** ([https://github.com/doda2025-team17/lib-version/releases/tag/v1.0.0](https://github.com/doda2025-team17/lib-version/releases/tag/v1.0.0)): Version utility library (used by app)
-* **operation** ([https://github.com/doda2025-team17/operation/releases/tag/v2.0.0](https://github.com/doda2025-team17/operation/releases/tag/v2.0.0)): Main deployment and orchestration repository with documentation
+| Repository | Latest Release | Description |
+|------------|----------------|-------------|
+| [**app**](https://github.com/doda2025-team17/app/) | [v1.0.1](https://github.com/doda2025-team17/app/releases/tag/v1.0.1) | Spring Boot web application serving as the frontend and API gateway |
+| [**model-service**](https://github.com/doda2025-team17/model-service/) | [v1.0.1](https://github.com/doda2025-team17/model-service/releases/tag/v1.0.1) | Python-based machine learning service for spam detection |
+| [**lib-version**](https://github.com/doda2025-team17/lib-version/) | [v1.0.2](https://github.com/doda2025-team17/lib-version/releases/tag/v1.0.2) | Version utility library used by the app service |
+| [**operation**](https://github.com/doda2025-team17/operation/) | [v3.0.0](https://github.com/doda2025-team17/operation/releases/tag/v3.0.0) | Main deployment and orchestration repository with documentation |
 
-## Quick Start
+# Quick Start
 
-### Prerequisites
+## Prerequisites
 
 * [Docker and Docker Compose](https://docs.docker.com/compose/install/)
 * [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
@@ -42,7 +41,7 @@ This system has four repositories, found at these links:
 * kubectl (1.34+)
 * [Helm](https://helm.sh/docs/intro/install/)
 
-### Running the Application
+## Running the Application
 
 1. **Clone the operation repository**:
 
@@ -69,19 +68,19 @@ This system has four repositories, found at these links:
    docker-compose down
 ```
 
-## Configuration
+# Configuration
 
-### Environment Variables
+## Environment Variables
 
 The application uses environment variables defined in the `.env` file:
 
-#### Port Configuration
+### Port Configuration
 
 * `APP_HOST_PORT`: Port on your machine to access the web application (default: `8080`)
 * `APP_CONTAINER_PORT`: Port the app listens on inside its container (default: `8080`)
 * `MODEL_CONTAINER_PORT`: Port the model service listens on inside its container (default: `8081`)
 
-### Port Mapping
+## Port Mapping
 
 | Service             | Access URL                                             | Exposed to Host?   |
 | ------------------- | ------------------------------------------------------ | ------------------ |
@@ -96,18 +95,18 @@ The application uses environment variables defined in the `.env` file:
 
 This design follows the **API Gateway pattern** where the frontend service acts as the single entry point.
 
-## Assignments
+# Assignments
 
-### Assignment 1
+## Assignment 1
 
 For Assignment 1, we have extended the application of the SMS spam detection system with multi-architecture Docker images, a Maven library with version-aware utilities, automated CI/CD workflows, and flexible Docker Compose orchestration.
 More information on the containerized services can be found at the [app repository](https://github.com/doda2025-team17/app) and [model-service repository](https://github.com/doda2025-team17/model-service), and details about the version-aware Maven library can be found at the [lib-version repository](https://github.com/doda2025-team17/lib-version).
 
-# Assignment 2 - Kubernetes Infrastructure
+## Assignment 2 - Kubernetes Infrastructure
 
 This directory contains the infrastructure code to spin up a Kubernetes cluster using **Vagrant**, **VirtualBox**, and **Ansible**.
 
-## Environment Overview
+### Environment Overview
 
 | Component     | Description                                          |
 | ------------- | ---------------------------------------------------- |
@@ -120,14 +119,14 @@ This directory contains the infrastructure code to spin up a Kubernetes cluster 
 | Service Mesh  | Istio (192.168.56.96)                                |
 | Dashboard     | Kubernetes Dashboard (dashboard.local)               |
 
-## Prerequisites
+### Prerequisites
 
 - VirtualBox (6.1+)
 - Vagrant (2.3+)
 - Ansible (2.10+)
 - kubectl
 
-### VirtualBox DHCP Conflict Fix
+#### VirtualBox DHCP Conflict Fix
 
 If you experience networking issues, remove any conflicting DHCP server:
 
@@ -137,9 +136,9 @@ VBoxManage dhcpserver remove --network=HostInterfaceNetworking-vboxnet0
 
 This is automatically handled in the Vagrantfile, but may need manual execution on some systems.
 
-## Quick Start
+### Quick Start
 
-### 1. Start the Cluster
+#### 1. Start the Cluster
 
 ```bash
 cd vm/
@@ -151,9 +150,9 @@ This automatically:
 - Runs all Ansible playbooks (general, ctrl, node, finalization, istio)
 - Installs Kubernetes, Flannel, MetalLB, Ingress, Dashboard, and Istio
 
-**Note:** First run takes 15-20 minutes.
+**Note:** First run takes 5-10 minutes.
 
-### Re-provisioning (if needed)
+#### 2. Re-provisioning (if needed)
 
 If provisioning fails or you need to re-run:
 
@@ -172,3 +171,77 @@ ansible-playbook -i inventory.cfg ansible/finalization.yaml \
 ansible-playbook -i inventory.cfg ansible/istio.yaml \
   --private-key=.vagrant/machines/ctrl/virtualbox/private_key -u vagrant
 ```
+
+## Assignment 3
+For more detailed instructions, please refer to the [Helm chart README](.helm/chart/README.md).
+
+### Prerequisites
+
+- VirtualBox (6.1+)
+- Vagrant (2.3+)
+- Ansible (2.10+)
+- kubectl
+- Helm
+
+### Installation
+
+#### 1. Start the Cluster
+
+```bash
+cd vm
+vagrant up
+cd ../
+```
+
+#### 2. Point to the `kubeconfig` file you plan to use (default or your own)
+
+```bash
+export KUBECONFIG=vm/kubeconfig
+```
+
+#### 3.a. Using the Helm Chart
+
+```bash
+helm install sms-app ./helm/chart \
+  --namespace sms-app \
+  --create-namespace
+```
+This deploys the app to the Kubernetes cluster with default configurations, creating:
+- A sms-app namespace
+- Two replicas of the `app` repository
+- One replica of the `model-service` repository
+- `ConfigMap` and `Secret` for configuration
+- `Deployments` for managing the pods
+- `Services` for internal communication
+- `Ingress` for external access (host: `sms-app.local`)
+
+
+#### 3.b. Upgrade with Custom Settings
+
+```bash
+helm upgrade sms-app ./helm/chart \
+  --namespace sms-app \
+  -f values.yaml
+```
+
+This allows you to update the deployment with custom configurations. You could, for example:
+- Change the ingress hostname for grading
+- Update the image tags to different versions
+- Modify replica counts for scaling
+- Customize service ports
+
+
+#### 4. Uninstall
+
+```bash
+helm uninstall sms-app --namespace sms-app
+```
+
+### Accessing the Application
+
+#### 1. Forward the Port (for ease of use)
+```bash
+kubectl port-forward svc/sms-app-app -n sms-app 8080:80
+```
+
+#### 2. Access the app at [http://localhost:8080/](http://localhost:8080/).
