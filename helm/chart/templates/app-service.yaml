@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "sms-app.app.name" . }}
+  namespace: {{ .Values.namespace.name | default .Release.Namespace }}
+  labels:
+    {{- include "sms-app.componentLabels" (dict "context" . "name" (include "sms-app.app.name" .) "component" "app") | nindent 4 }}
+spec:
+  type: {{ .Values.app.service.type }}
+  selector:
+    app.kubernetes.io/name: {{ include "sms-app.app.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+    - name: http
+      port: {{ .Values.app.service.port }}
+      targetPort: {{ .Values.app.containerPort }}

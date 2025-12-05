@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "sms-app.model.name" . }}
+  namespace: {{ .Values.namespace.name | default .Release.Namespace }}
+  labels:
+    {{- include "sms-app.componentLabels" (dict "context" . "name" (include "sms-app.model.name" .) "component" "model") | nindent 4 }}
+spec:
+  replicas: {{ .Values.modelService.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "sms-app.model.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        {{- include "sms-app.componentLabels" (dict "context" . "name" (include "sms-app.model.name" .) "component" "model") | nindent 8 }}
+    spec:
+      containers:
+        - name: model-service
+          image: "{{ .Values.modelService.image.repository }}:{{ .Values.modelService.image.tag }}"
+          imagePullPolicy: {{ .Values.modelService.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.modelService.containerPort }}
+          env:
+            - name: MODEL_SERVICE_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "sms-app.fullname" . }}-config
+                  key: MODEL_SERVICE_PORT
+            - name: MODEL_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "sms-app.fullname" . }}-config
+                  key: MODEL_URL
+          {{- if .Values.modelService.volume.enabled }}
+          volumeMounts:
+            - name: shared-models
+              mountPath: /models
+          {{- end }}
+          readinessProbe:
+            {{- if .Values.modelService.readinessProbe.tcpSocket }}
+            tcpSocket:
+              port: {{ .Values.modelService.containerPort }}
+            {{- else }}
+            httpGet:
+              path: /
+              port: {{ .Values.modelService.containerPort }}
+            {{- end }}
+            initialDelaySeconds: {{ .Values.modelService.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.modelService.readinessProbe.periodSeconds }}
+          livenessProbe:
+            {{- if .Values.modelService.livenessProbe.tcpSocket }}
+            tcpSocket:
+              port: {{ .Values.modelService.containerPort }}
+            {{- else }}
+            httpGet:
+              path: /
+              port: {{ .Values.modelService.containerPort }}
+            {{- end }}
+            initialDelaySeconds: {{ .Values.modelService.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.modelService.livenessProbe.periodSeconds }}
+      {{- if .Values.modelService.volume.enabled }}
+      volumes:
+        - name: shared-models
+          hostPath:
+            path: {{ .Values.modelService.volume.hostPath }}
+            type: DirectoryOrCreate
+      {{- end }}

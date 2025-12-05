@@ -1,0 +1,15 @@
+Release name: {{ .Release.Name }}
+Namespace: {{ .Values.namespace.name | default .Release.Namespace }}
+
+- App image: {{ .Values.app.image.repository }}:{{ default .Chart.AppVersion .Values.app.image.tag | default "latest" }}
+- Model image: {{ .Values.modelService.image.repository }}:{{ default .Chart.AppVersion .Values.modelService.image.tag | default "latest" }}
+
+Resources installed:
+- App service: {{ include "sms-app.app.name" . }}
+- Model service: {{ include "sms-app.model.name" . }}
+{{- if .Values.ingress.enabled }}
+- Ingress: {{ include "sms-app.fullname" . }}-ingress (host: {{ (first .Values.ingress.hosts).host | default "set ingress.hosts" }})
+{{- end }}
+
+To uninstall:
+  helm uninstall {{ .Release.Name }} --namespace {{ .Values.namespace.name | default .Release.Namespace }}

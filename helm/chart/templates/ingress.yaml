@@ -1,0 +1,42 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "sms-app.fullname" . }}-ingress
+  namespace: {{ .Values.namespace.name | default .Release.Namespace }}
+  labels:
+    {{- include "sms-app.labels" . | nindent 4 }}
+  {{- if or (and .Values.ingress.className (ne .Values.ingress.className "")) .Values.ingress.annotations }}
+  annotations:
+    {{- if and .Values.ingress.className (ne .Values.ingress.className "") }}
+    kubernetes.io/ingress.class: {{ .Values.ingress.className }}
+    {{- end }}
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- end }}
+spec:
+  {{- if and .Values.ingress.className (ne .Values.ingress.className "") }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
+  {{- $hosts := required "ingress.hosts is required when ingress.enabled=true" .Values.ingress.hosts }}
+  rules:
+    {{- range $hosts }}
+    - host: {{ .host }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ include "sms-app.app.name" $ | default "" }}
+                port:
+                  number: {{ $.Values.app.service.port }}
+          {{- end }}
+    {{- end }}
+  {{- with .Values.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}

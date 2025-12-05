@@ -1,0 +1,81 @@
+# Namespace settings
+namespace:
+  create: true
+  name: sms-app
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+config:
+  appHostPort: "8080"
+  appServerPort: ""
+  modelHost: ""
+  modelServicePort: ""
+  modelUrl: "https://github.com/doda2025-team17/model-service/releases/download/v1.0.0/model-artifacts.tar.gz"
+
+secrets:
+  smtpPassword: "CHANGE_ME_IN_HELM"
+
+app:
+  replicaCount: 2
+  image:
+    repository: ghcr.io/doda2025-team17/app
+    tag: latest
+    pullPolicy: IfNotPresent
+  containerPort: 8080
+  service:
+    type: ClusterIP
+    port: 80
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podAnnotations: {}
+  readinessProbe:
+    path: /
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  livenessProbe:
+    path: /
+    initialDelaySeconds: 15
+    periodSeconds: 20
+
+modelService:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/doda2025-team17/model-service
+    tag: latest
+    pullPolicy: IfNotPresent
+  containerPort: 8081
+  service:
+    type: ClusterIP
+    port: 8081
+  volume:
+    enabled: true
+    hostPath: /mnt/shared/models
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  podAnnotations: {}
+  readinessProbe:
+    tcpSocket: true
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  livenessProbe:
+    tcpSocket: true
+    initialDelaySeconds: 15
+    periodSeconds: 20
+
+ingress:
+  enabled: true
+  className: ""
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  hosts:
+    - host: sms-app.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
