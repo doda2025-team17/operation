@@ -5,7 +5,10 @@ This chart deploys the SMS spam detection stack (Spring Boot app and Python mode
 ## Install
 
 ```bash
-# from operation repo
+# Point to the kubeconfig file you plan to use (your own, or the one generated when provisioning)
+export KUBECONFIG=vm/kubeconfig
+
+# From operation repo
 helm install sms-app ./helm/chart \
   --namespace sms-app \
   --create-namespace
@@ -16,7 +19,7 @@ Upgrade with custom settings:
 ```bash
 helm upgrade sms-app ./helm/chart \
   --namespace sms-app \
-  -f my-values.yaml
+  -f values.yaml
 ```
 
 Uninstall with:
