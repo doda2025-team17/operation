@@ -75,6 +75,12 @@ No work
 
 ### Rebecca
 
+- generated an `inventory.cfg` file for Excellent requirement (PR [#21](https://github.com/doda2025-team17/operation/pull/21))
+- completed the Ansible installation (PR [#26](https://github.com/doda2025-team17/operation/pull/26))
+- completed the Docker-compose to Kubernetes migration (PR [#34](https://github.com/doda2025-team17/operation/pull/34))
+- added Assignment 3 to the `README.md` file (PR [#38](https://github.com/doda2025-team17/operation/pull/38))
+- reviewed other people's PRs
+
 ### Arnav
 
 ### Kristian
