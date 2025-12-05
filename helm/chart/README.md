@@ -1,6 +1,6 @@
 # SMS App Helm Chart
 
-This chart deploys the SMS spam detection stack (Spring Boot app and Python model service) into a Kubernetes cluster. It creates the namespace, ConfigMap, Secret, Deployments, Services, and optional Ingress that mirror the existing `vm/kubernetes` manifests.
+This chart deploys the SMS spam detection stack (Spring Boot app and Python model service) into a Kubernetes cluster. It creates the namespace, ConfigMap, Secret, Deployments, Services, and optionally Ingress.
 
 ## Install
 
@@ -47,6 +47,9 @@ helm uninstall sms-app --namespace sms-app
     --set 'ingress.hosts[0].host=myapp.example.com' \
     --set 'ingress.hosts[0].paths[0].path=/' \
     --set 'ingress.hosts[0].paths[0].pathType=Prefix' 
+- SMTP secret: set `secrets.smtpPassword` at install/upgrade time.
+  - Inline: `helm install sms-app ./helm/chart -n sms-app --create-namespace --set secrets.smtpPassword=your-smtp-password`
+  - Or use a "secret"-values file (avoids shell history): write `secrets.smtpPassword: "your-smtp-password"` into a file (e.g., `secrets.yaml`) and pass `-f secrets.yaml`.
 - The model service mounts a hostPath at `/mnt/shared/models` by default. Disable or change with `modelService.volume.*` to match your cluster.
 - To change deployment versions: (change the tags)
     helm install sms-app ./helm/chart \

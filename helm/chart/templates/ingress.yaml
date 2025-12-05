@@ -19,8 +19,9 @@ spec:
   {{- if and .Values.ingress.className (ne .Values.ingress.className "") }}
   ingressClassName: {{ .Values.ingress.className }}
   {{- end }}
+  {{- $hosts := required "ingress.hosts is required when ingress.enabled=true" .Values.ingress.hosts }}
   rules:
-    {{- range .Values.ingress.hosts }}
+    {{- range $hosts }}
     - host: {{ .host }}
       http:
         paths:

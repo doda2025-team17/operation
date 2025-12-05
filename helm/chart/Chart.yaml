@@ -1,4 +1,4 @@
-apiVersion: v2
+apiVersion: v1
 name: sms-app
 description: Helm chart for the SMS spam detection application.
 type: application
