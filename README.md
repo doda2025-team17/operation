@@ -15,8 +15,13 @@ This system has four repositories, found at these links:
 
 ### Prerequisites
 
-- Docker
-- Docker Compose
+- [Docker and Docker Compose](https://docs.docker.com/compose/install/)
+- [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
+- [Vagrant](https://developer.hashicorp.com/vagrant/install)
+- [VirtualBox](https://www.virtualbox.org/wiki/Downloads)
+- [Minikube](https://minikube.sigs.k8s.io/docs/start/)
+- kubectl (1.34+)
+- [Helm](https://helm.sh/docs/intro/install/)
 
 ### Running the Application
 
