@@ -3,12 +3,12 @@
 This chart deploys the SMS spam detection stack (Spring Boot app and Python model service) into a Kubernetes cluster. It creates the namespace, ConfigMap, Secret, Deployments, Services, and optionally Ingress.
 
 ## Install
+From the operations repo,
 
 ```bash
 # Point to the kubeconfig file you plan to use (your own, or the one generated when provisioning)
 export KUBECONFIG=vm/kubeconfig
 
-# From operation repo
 helm install sms-app ./helm/chart \
   --namespace sms-app \
   --create-namespace
@@ -39,18 +39,28 @@ helm uninstall sms-app --namespace sms-app
 
 ## Notes
 
+### Images
 - The chart defaults to images `ghcr.io/doda2025-team17/app:latest` and `ghcr.io/doda2025-team17/model-service:latest`. Override tags for pinned releases.
+
+### Ingress
 - Ingress is enabled by default with host `sms-app.local` and the NGINX rewrite annotation; adjust for your controller.
+
   - To change hostname: (need to specify whole path of hostname)
     helm install sms-app ./helm/chart \
     -n sms-app --create-namespace \
     --set 'ingress.hosts[0].host=myapp.example.com' \
     --set 'ingress.hosts[0].paths[0].path=/' \
     --set 'ingress.hosts[0].paths[0].pathType=Prefix' 
+  
+### Secrets
 - SMTP secret: set `secrets.smtpPassword` at install/upgrade time.
-  - Inline: `helm install sms-app ./helm/chart -n sms-app --create-namespace --set secrets.smtpPassword=your-smtp-password`
-  - Or use a "secret"-values file (avoids shell history): write `secrets.smtpPassword: "your-smtp-password"` into a file (e.g., `secrets.yaml`) and pass `-f secrets.yaml`.
+  - **Inline:** `helm install sms-app ./helm/chart -n sms-app --create-namespace --set secrets.smtpPassword=your-smtp-password`
+  - **Or use a "secret"-values file** (avoids shell history): write `secrets.smtpPassword: "your-smtp-password"` into a file (e.g., `secrets.yaml`) and pass `-f secrets.yaml`.
+
+### HostPath
 - The model service mounts a hostPath at `/mnt/shared/models` by default. Disable or change with `modelService.volume.*` to match your cluster.
+
+### Deployment Versions
 - To change deployment versions: (change the tags)
     helm install sms-app ./helm/chart \
     -n sms-app --create-namespace \
