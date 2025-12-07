@@ -87,6 +87,14 @@ No work
 
 ### Ana
 
+- fixed app release flow (PR [#16](https://github.com/doda2025-team17/app/pull/16))
+- fixed module-service release flow (PR [#9](https://github.com/doda2025-team17/model-service/pull/9))
+- fixed lib-version release based on peer review (PR [#2](https://github.com/doda2025-team17/lib-version/pull/2))
+- addressed peer review in operation (PR [#28] (https://github.com/doda2025-team17/operation/pull/28))
+- fixed assignment 2 flow in operation (PR [#29](https://github.com/doda2025-team17/operation/pull/29))
+- updated assignment 2 readme in operation (PR [#36](https://github.com/doda2025-team17/operation/pull/36))
+- reviewed other people's PRs
+
 ### Nicholas
 
 ## Week Q4.5 (Dec. 4 - 10)
