@@ -1,0 +1,23 @@
+{{- if and .Values.monitoring.enabled .Values.kube-prometheus-stack.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "sms-app.model.name" . }}
+  namespace: {{ .Values.monitoring.serviceMonitor.namespace | default ( .Values.namespace.name | default .Release.Namespace ) }}
+  labels:
+    {{- include "sms-app.labels" . | nindent 4 }}
+    {{ .Values.monitoring.serviceMonitor.labelKey }}: {{ .Values.monitoring.serviceMonitor.labelValue }}
+spec:
+  namespaceSelector:
+    matchNames:
+      - {{ .Values.namespace.name | default .Release.Namespace }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "sms-app.model.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  endpoints:
+    - port: {{ .Values.monitoring.ports.name }}
+      path: {{ .Values.monitoring.paths.model }}
+      interval: {{ .Values.monitoring.scrapeInterval }}
+      scheme: http
+{{- end }}
