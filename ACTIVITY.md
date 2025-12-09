@@ -96,6 +96,9 @@ No work
 - reviewed other people's PRs
 
 ### Nicholas
+- Responsible for the Helm Chart Implementation (PR [#37] https://github.com/doda2025-team17/operation/pull/37)
+- Reviewed PR's of the team
+- Help test and finish assignment 2
 
 ## Week Q4.5 (Dec. 4 - 10)
 
