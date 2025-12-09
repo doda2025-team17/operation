@@ -27,6 +27,7 @@ app:
   service:
     type: ClusterIP
     port: 80
+    metricsPort: 8080
   resources: {}
   nodeSelector: {}
   tolerations: []
@@ -70,7 +71,7 @@ modelService:
 
 ingress:
   enabled: true
-  className: ""
+  className: "nginx"
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
   hosts:
@@ -79,3 +80,30 @@ ingress:
         - path: /
           pathType: Prefix
   tls: []
+
+# Monitoring / Prometheus setup
+monitoring:
+  enabled: true
+  serviceMonitor:
+    labelKey: monitoring
+    labelValue: sms-app
+    namespace: sms-app
+  ports:
+    name: metrics
+  paths:
+    app: /actuator/prometheus
+    model: /metrics
+  scrapeInterval: 15s
+
+kube-prometheus-stack:
+  enabled: true
+  alertmanager:
+    enabled: false
+  grafana:
+    enabled: false
+  prometheus:
+    prometheusSpec:
+      serviceMonitorSelector:
+        matchLabels:
+          monitoring: sms-app
+      serviceMonitorNamespaceSelector: {}

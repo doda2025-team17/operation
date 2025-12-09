@@ -6,22 +6,16 @@ metadata:
   namespace: {{ .Values.namespace.name | default .Release.Namespace }}
   labels:
     {{- include "sms-app.labels" . | nindent 4 }}
-  {{- if or (and .Values.ingress.className (ne .Values.ingress.className "")) .Values.ingress.annotations }}
+  {{- with .Values.ingress.annotations }}
   annotations:
-    {{- if and .Values.ingress.className (ne .Values.ingress.className "") }}
-    kubernetes.io/ingress.class: {{ .Values.ingress.className }}
-    {{- end }}
-    {{- with .Values.ingress.annotations }}
     {{- toYaml . | nindent 4 }}
-    {{- end }}
   {{- end }}
 spec:
-  {{- if and .Values.ingress.className (ne .Values.ingress.className "") }}
+  {{- if .Values.ingress.className }}
   ingressClassName: {{ .Values.ingress.className }}
   {{- end }}
-  {{- $hosts := required "ingress.hosts is required when ingress.enabled=true" .Values.ingress.hosts }}
   rules:
-    {{- range $hosts }}
+    {{- range .Values.ingress.hosts }}
     - host: {{ .host }}
       http:
         paths:
@@ -30,7 +24,7 @@ spec:
             pathType: {{ .pathType }}
             backend:
               service:
-                name: {{ include "sms-app.app.name" $ | default "" }}
+                name: {{ include "sms-app.app.name" $ }}
                 port:
                   number: {{ $.Values.app.service.port }}
           {{- end }}
