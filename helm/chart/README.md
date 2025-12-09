@@ -219,7 +219,7 @@ helm install sms-app ./helm/chart -n sms-app --create-namespace \
 
 ### Access Prometheus
 ```bash
-kubectl port-forward -n sms-app svc/sms-app-kube-prometheus-prometheus 9090:9090
+kubectl port-forward -n sms-app svc/sms-app-kube-prometheus-st-prometheus 9090:9090
 ```
 
 Then open http://localhost:9090
