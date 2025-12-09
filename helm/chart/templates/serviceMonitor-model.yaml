@@ -1,3 +1,4 @@
+{{- if .Values.monitoring.enabled }}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
@@ -15,7 +16,8 @@ spec:
       app.kubernetes.io/name: {{ include "sms-app.model.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
   endpoints:
-    - port: {{ .Values.monitoring.ports.name }}
+    - port: http
       path: {{ .Values.monitoring.paths.model }}
       interval: {{ .Values.monitoring.scrapeInterval }}
       scheme: http
+{{- end }}

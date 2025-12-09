@@ -14,3 +14,6 @@ spec:
     - name: http
       port: {{ .Values.app.service.port }}
       targetPort: {{ .Values.app.containerPort }}
+    - name: metrics
+      port: {{ .Values.app.service.metricsPort }}
+      targetPort: {{ .Values.app.containerPort }}

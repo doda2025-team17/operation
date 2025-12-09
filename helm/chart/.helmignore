@@ -7,5 +7,4 @@
 *.tmp
 *.orig
 *.log
-charts/
 tmp/

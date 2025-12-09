@@ -52,7 +52,6 @@ modelService:
   service:
     type: ClusterIP
     port: 8081
-    metricsPort: 8081
   volume:
     enabled: true
     hostPath: /mnt/shared/models
@@ -72,7 +71,7 @@ modelService:
 
 ingress:
   enabled: true
-  className: ""
+  className: "nginx"
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
   hosts:
@@ -107,6 +106,4 @@ kube-prometheus-stack:
       serviceMonitorSelector:
         matchLabels:
           monitoring: sms-app
-      serviceMonitorNamespaceSelector:
-        matchNames:
-          - sms-app
+      serviceMonitorNamespaceSelector: {}
