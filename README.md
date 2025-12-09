@@ -173,7 +173,7 @@ ansible-playbook -i inventory.cfg ansible/istio.yaml \
 ```
 
 ## Assignment 3
-For more detailed instructions, please refer to the [Helm chart README](.helm/chart/README.md).
+For more detailed instructions, please refer to the [Helm chart README](helm/chart/README.md).
 
 ### Prerequisites
 
@@ -221,6 +221,11 @@ This deploys the app to the Kubernetes cluster with default configurations, crea
 ```bash
 helm upgrade sms-app ./helm/chart \
   --namespace sms-app \
+  --create-namespace \
+  --set secrets.smtpPassword=whatever \
+  --set app.image.tag=monitoring \
+  --set modelService.image.tag=monitoring \
+  --dependency-update \
   -f values.yaml
 ```
 

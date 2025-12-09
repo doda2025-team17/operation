@@ -19,7 +19,11 @@ Upgrade with custom settings:
 ```bash
 helm upgrade sms-app ./helm/chart \
   --namespace sms-app \
-  -f values.yaml
+  --create-namespace \
+  --set secrets.smtpPassword=whatever \
+  --set app.image.tag=monitoring \
+  --set modelService.image.tag=monitoring \
+  --dependency-update
 ```
 
 Uninstall with:
@@ -36,11 +40,16 @@ helm uninstall sms-app --namespace sms-app
 - `config.*`: values injected into the ConfigMap (leave empty to auto-wire internal service/ports).
 - `secrets.smtpPassword`: placeholder secret for SMTP credentials.
 - `ingress.*`: hostnames, annotations, and TLS for the Ingress.
+- `monitoring.*`: ServiceMonitor labels, metrics ports/paths, scrape interval, toggle monitoring with `monitoring.enabled`.
+- `kube-prometheus-stack.*`: toggle the bundled Prometheus dependency.
 
 ## Notes
 
 ### Images
 - The chart defaults to images `ghcr.io/doda2025-team17/app:latest` and `ghcr.io/doda2025-team17/model-service:latest`. Override tags for pinned releases.
+
+### Prometheus
+- The bundled Prometheus (kube-prometheus-stack) is enabled by default. The Prometheus Service name is `prometheus-stack-kube-prom-prometheus` (port-forward accordingly), adjust namespace/service if you install it elsewhere.
 
 ### Ingress
 - Ingress is enabled by default with host `sms-app.local` and the NGINX rewrite annotation; adjust for your controller.
