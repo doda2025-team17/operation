@@ -83,6 +83,10 @@ No work
 
 ### Arnav
 
+- Finished up steps 21, 22, and 23 of assignment 2
+- Dual booted linux to work with the assignments better
+- Reviewed other peoples PRs
+
 ### Kristian
 
 ### Ana
