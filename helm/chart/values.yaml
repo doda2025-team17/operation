@@ -95,10 +95,40 @@ monitoring:
     model: /metrics
   scrapeInterval: 15s
 
+# Alerting
+alerting:
+  enabled: true
+  email:
+    to: "you@example.com"
+    from: "noreply@example.com"
+    smarthost: "smtp.gmail.com:587"
+    username: "you@example.com"
+
+
 kube-prometheus-stack:
   enabled: true
+
   alertmanager:
-    enabled: false
+    enabled: true
+    config:
+      global:
+        resolve_timeout: 5m
+      route:
+        receiver: default
+        group_by: [ "alertname" ]
+        routes:
+          - matchers: [ severity = "critical" ]
+            receiver: default
+      receivers:
+        - name: default
+          email_configs:
+            - to: "{{ .Values.alerting.email.to }}"
+              from: "{{ .Values.alerting.email.from }}"
+              smarthost: "{{ .Values.alerting.email.smarthost }}"
+              auth_username: "{{ .Values.alerting.email.username }}"
+              auth_password: "{{ .Values.secrets.smtpPassword }}"
+              require_tls: true
+
   grafana:
     enabled: false
   prometheus:
