@@ -328,6 +328,40 @@ kubectl create secret generic smtp-credentials \
   --from-literal=password='<YOUR_SMTP_APP_PASSWORD>'
 ```
 
+After creating secret verify it exists by running:
+`kubectl get secret smtp-credentials -n sms-app`
+
+### Access Prometheus UI and Alertmanager UI
+From terminal 1 run:
+
+`kubectl -n sms-app port-forward svc/sms-app-kube-prometheus-st-prometheus 9090:9090`
+
+From terminal 2 run:
+
+`kubectl -n sms-app port-forward svc/sms-app-kube-prometheus-st-alertmanager 9093:9093`
+
+Then open:
+- Prometheus UI: http://localhost:9090/alerts
+- Alertmanager UI: http://localhost:9093
+
+## Verify it works
+
+From terminal 3 trigger the alert:
+
+`kubectl -n sms-app port-forward svc/sms-app-app 8080:80`
+
+From terminal 4 run:
+
+```bash
+end=$((SECONDS+150))
+while [ $SECONDS -lt $end ]; do
+  for i in {1..40}; do curl -s http://localhost:8080/ >/dev/null & done
+  wait
+  sleep 1
+done
+```
+
+
 ### Error handling
 When you encounter:
 Error: unable to continue with install: Namespace "sms-app" in namespace "" exists and cannot be imported into the current release: invalid ownership metadata; label validation error: missing key "app.kubernetes.io/managed-by": must be set to "Helm"; annotation validation error: missing key "meta.helm.sh/release-name": must be set to "sms-app"; annotation validation error: missing key "meta.helm.sh/release-namespace": must be set to "sms-app"
@@ -339,9 +373,9 @@ kubectl delete ns sms-app
 
 ## Grafana
 
-First do commands from [Buuld docker images for monitoring and alerting](#build-docker-images-for-monitoring-and-alerting)
+### If not already running because of previous steps:
 
-### Deploy the Helm chart from the operation repo root:
+First do commands from [Buuld docker images for monitoring and alerting](#build-docker-images-for-monitoring-and-alerting)
 
 ```bash
 helm dependency build helm/chart
