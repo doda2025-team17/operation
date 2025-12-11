@@ -14,8 +14,8 @@ config:
   modelServicePort: ""
   modelUrl: "https://github.com/doda2025-team17/model-service/releases/download/v1.0.0/model-artifacts.tar.gz"
 
-secrets:
-  smtpPassword: "CHANGE_ME_IN_HELM"
+grafana:
+  host: grafana.local
 
 app:
   replicaCount: 2
@@ -108,18 +108,20 @@ alerting:
 # kube-prometheus-stack subchart configuration
 kube-prometheus-stack:
   enabled: true
+
   prometheusOperator:
     image:
       registry: quay.io
       repository: prometheus-operator/prometheus-operator
       tag: v0.68.0
+
   alertmanager:
     enabled: true
     # Use AlertmanagerConfig CRDs for routing (which support secretKeyRef)
     alertmanagerSpec:
       alertmanagerConfigSelector:
         matchLabels:
-          alertmanagerConfig: '{{ .Release.Name }}'
+          alertmanagerConfig: sms-app
       alertmanagerConfigNamespaceSelector: {}
     # Base config - routes are extended by AlertmanagerConfig CRD
     config:
@@ -140,12 +142,36 @@ kube-prometheus-stack:
       serviceMonitorNamespaceSelector: {}
       ruleSelector:
         matchLabels:
-          release: '{{ .Release.Name }}'
+          release: sms-app
       ruleNamespaceSelector: {}
 
-  # Disable components we don't need
+  # Enable Grafana
   grafana:
-    enabled: false  # We manage Grafana separately
+    enabled: true
+    
+    image:
+      repository: grafana/grafana
+      tag: "9.5.0"
+    adminPassword: admin  # Change in production or use secret
+    
+    # Auto-provision dashboards from ConfigMaps with label grafana_dashboard=sms-app
+    sidecar:
+      dashboards:
+        enabled: true
+        label: grafana_dashboard
+        labelValue: sms-app
+        searchNamespace: ALL
+        folderAnnotation: grafana_folder
+        provider:
+          foldersFromFilesStructure: true
+    
+    # Ingress for Grafana
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - grafana.local
+      path: /
   
   kubeStateMetrics:
     enabled: true

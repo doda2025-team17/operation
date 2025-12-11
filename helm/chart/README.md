@@ -11,6 +11,9 @@ This chart deploys the SMS spam detection stack (Spring Boot app and Python mode
 
 ## First-Time Setup
 
+Add this if not present to `/etc/hosts/`:
+`192.168.56.95  grafana.local dashboard.local sms-app.local`
+
 From the operations repo:
 ```bash
 # Point to the kubeconfig file you plan to use (your own, or the one generated when provisioning)
@@ -333,3 +336,31 @@ Try to delete existing namespace:
 ```
 kubectl delete ns sms-app
 ```
+
+## Grafana
+
+First do commands from [Buuld docker images for monitoring and alerting](#build-docker-images-for-monitoring-and-alerting)
+
+### Deploy the Helm chart from the operation repo root:
+
+```bash
+helm dependency build helm/chart
+
+helm upgrade --install sms-app helm/chart -n sms-app \
+  --create-namespace \
+  --set secrets.smtpPassword="YOUR_SMTP_PASSWORD" \
+  --set alerting.enabled=true \
+  --set alerting.email.to="your-email@example.com" \
+  --set alerting.email.from="sms-app-alerts@example.com" \
+  --set alerting.email.username="your-email@example.com" \
+  --set alerting.email.smarthost="smtp.gmail.com:587" \
+  --set app.image.repository=ghcr.io/doda2025-team17/app \
+  --set app.image.tag=alerting \
+  --set modelService.image.repository=ghcr.io/doda2025-team17/model-service \
+  --set modelService.image.tag=alerting \
+  --set imagePullSecrets[0].name=ghcr-cred
+  # --set "imagePullSecrets[0].name=ghcr-cred" #replace above with this line if you encountet "no mathces found: imagePullSecrets...."
+```
+### Access
+
+Access grafana dashboard at `https://grafana.local/dashboards`
