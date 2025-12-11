@@ -106,8 +106,6 @@ alerting:
 
 
 kube-prometheus-stack:
-  enabled: true
-
   alertmanager:
     enabled: true
     config:
@@ -122,12 +120,13 @@ kube-prometheus-stack:
       receivers:
         - name: default
           email_configs:
-            - to: "{{ .Values.alerting.email.to }}"
-              from: "{{ .Values.alerting.email.from }}"
-              smarthost: "{{ .Values.alerting.email.smarthost }}"
-              auth_username: "{{ .Values.alerting.email.username }}"
-              auth_password: "{{ .Values.secrets.smtpPassword }}"
+            - to: "your-email@example.com"
+              from: "sms-app-alerts@example.com"
+              smarthost: "smtp.gmail.com:587"
+              auth_username: "your-email@example.com"
+              auth_password: "YOUR_SMTP_PASSWORD"
               require_tls: true
+
 
   grafana:
     enabled: false
