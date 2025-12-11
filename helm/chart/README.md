@@ -201,9 +201,78 @@ kubectl describe ingress -n sms-app
 
 Ensure you have access to the GitHub Container Registry or set `imagePullSecrets` in values.yaml.
 
+## Build docker images for monitoring and alerting
+
+### Build and push latest Docker images from the app repo:
+
+```bash
+mvn clean package -DskipTests
+docker build --build-arg GITHUB_TOKEN="$GHCR_PAT" -t ghcr.io/doda2025-team17/app:alerting .
+docker push ghcr.io/doda2025-team17/app:alerting
+```
+
+If you run into any errors regarding unauthorized access, make sure your `~/.m2/settings.xml` is defined:
+```bash
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0
+                              https://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <servers>
+    <server>
+      <id>github</id>
+      <username>YOUR_GITHUB_USERNAME</username>
+      <password>YOUR_PAT_HERE</password>
+    </server>
+  </servers>
+</settings>
+```
+
+also make sure that:
+```bash
+export GHCR_PAT="your_real_pat_here"
+echo "$GHCR_PAT"
+```
+prints your PAT token. Your PAT token should have `repo` and `write: packages` and `read:packages` privileges.
+
+### Build and push latest Docker images from the model-service repo:
+
+```bash
+pip install -r requirements.txt --break-system-packages
+docker build -t ghcr.io/doda2025-team17/model-service:alerting .
+docker push ghcr.io/doda2025-team17/model-service:alerting
+```
+
+If you run into error when running `docker push ghcr.io/doda2025-team17/model-service:alerting`:
+`unauthorized: unauthenticated: User cannot be authenticated with the token provided.`
+
+do:
+`docker logout ghcr.io`
+Removing login credentials for ghcr.io
+`docker login ghcr.io`
+Username: `YOUR_GITHUB_USERNAME`
+Password: `YOUR_PAT`
+
+Repeat the command that caused the error.
+
 ## Monitoring
 
 The chart includes Prometheus monitoring via kube-prometheus-stack dependency.
+
+### Start Monitoring
+
+First do commands from [Buuld docker images for monitoring and alerting](#build-docker-images-for-monitoring-and-alerting)
+
+Now run:
+```bash
+helm dependency build helm/chart
+
+helm upgrade --install sms-app ./helm/chart -n sms-app \
+  --create-namespace \
+  --set secrets.smtpPassword=whatever \
+  --set app.image.tag=monitoring \
+  --set modelService.image.tag=monitoring \
+  --dependency-update
+```
 
 ### Metrics Endpoints
 
@@ -223,3 +292,44 @@ kubectl port-forward -n sms-app svc/sms-app-kube-prometheus-st-prometheus 9090:9
 ```
 
 Then open http://localhost:9090
+
+## Alerting
+
+First do commands from [Buuld docker images for monitoring and alerting](#build-docker-images-for-monitoring-and-alerting)
+
+### Deploy the Helm chart from the operation repo root:
+
+```bash
+helm dependency build helm/chart
+
+helm upgrade --install sms-app helm/chart -n sms-app \
+  --create-namespace \
+  --set secrets.smtpPassword="YOUR_SMTP_PASSWORD" \
+  --set alerting.enabled=true \
+  --set alerting.email.to="your-email@example.com" \
+  --set alerting.email.from="sms-app-alerts@example.com" \
+  --set alerting.email.username="your-email@example.com" \
+  --set alerting.email.smarthost="smtp.gmail.com:587" \
+  --set app.image.repository=ghcr.io/doda2025-team17/app \
+  --set app.image.tag=alerting \
+  --set modelService.image.repository=ghcr.io/doda2025-team17/model-service \
+  --set modelService.image.tag=alerting \
+  --set imagePullSecrets[0].name=ghcr-cred
+  # --set "imagePullSecrets[0].name=ghcr-cred" #replace above with this line if you encountet "no mathces found: imagePullSecrets...."
+```
+
+### Create secret
+```bash
+kubectl create secret generic smtp-credentials \
+  --namespace=sms-app \
+  --from-literal=password='<YOUR_SMTP_APP_PASSWORD>'
+```
+
+### Error handling
+When you encounter:
+Error: unable to continue with install: Namespace "sms-app" in namespace "" exists and cannot be imported into the current release: invalid ownership metadata; label validation error: missing key "app.kubernetes.io/managed-by": must be set to "Helm"; annotation validation error: missing key "meta.helm.sh/release-name": must be set to "sms-app"; annotation validation error: missing key "meta.helm.sh/release-namespace": must be set to "sms-app"
+
+Try to delete existing namespace:
+```
+kubectl delete ns sms-app
+```
