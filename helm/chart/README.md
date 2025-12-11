@@ -315,4 +315,14 @@ helm upgrade --install sms-app helm/chart -n sms-app \
   --set modelService.image.repository=ghcr.io/doda2025-team17/model-service \
   --set modelService.image.tag=alerting \
   --set imagePullSecrets[0].name=ghcr-cred
+  # --set "imagePullSecrets[0].name=ghcr-cred" #replace above with this line if you encountet "no mathces found: imagePullSecrets...."
+```
+
+### Errror handling
+When you encounter:
+Error: unable to continue with install: Namespace "sms-app" in namespace "" exists and cannot be imported into the current release: invalid ownership metadata; label validation error: missing key "app.kubernetes.io/managed-by": must be set to "Helm"; annotation validation error: missing key "meta.helm.sh/release-name": must be set to "sms-app"; annotation validation error: missing key "meta.helm.sh/release-namespace": must be set to "sms-app"
+
+Try to delete existing namespace:
+```
+kubectl delete ns sms-app
 ```
