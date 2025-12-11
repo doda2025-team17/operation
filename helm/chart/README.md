@@ -297,13 +297,6 @@ Then open http://localhost:9090
 
 First do commands from [Buuld docker images for monitoring and alerting](#build-docker-images-for-monitoring-and-alerting)
 
-### Create secret
-```bash
-kubectl create secret generic smtp-credentials \
-  --namespace=sms-app \
-  --from-literal=password='<YOUR_SMTP_APP_PASSWORD>'
-```
-
 ### Deploy the Helm chart from the operation repo root:
 
 ```bash
@@ -323,6 +316,13 @@ helm upgrade --install sms-app helm/chart -n sms-app \
   --set modelService.image.tag=alerting \
   --set imagePullSecrets[0].name=ghcr-cred
   # --set "imagePullSecrets[0].name=ghcr-cred" #replace above with this line if you encountet "no mathces found: imagePullSecrets...."
+```
+
+### Create secret
+```bash
+kubectl create secret generic smtp-credentials \
+  --namespace=sms-app \
+  --from-literal=password='<YOUR_SMTP_APP_PASSWORD>'
 ```
 
 ### Error handling
