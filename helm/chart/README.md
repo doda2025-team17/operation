@@ -297,6 +297,13 @@ Then open http://localhost:9090
 
 First do commands from [Buuld docker images for monitoring and alerting](#build-docker-images-for-monitoring-and-alerting)
 
+### Create secret
+```bash
+kubectl create secret generic smtp-credentials \
+  --namespace=sms-app \
+  --from-literal=password='<YOUR_SMTP_APP_PASSWORD>'
+```
+
 ### Deploy the Helm chart from the operation repo root:
 
 ```bash
@@ -318,7 +325,7 @@ helm upgrade --install sms-app helm/chart -n sms-app \
   # --set "imagePullSecrets[0].name=ghcr-cred" #replace above with this line if you encountet "no mathces found: imagePullSecrets...."
 ```
 
-### Errror handling
+### Error handling
 When you encounter:
 Error: unable to continue with install: Namespace "sms-app" in namespace "" exists and cannot be imported into the current release: invalid ownership metadata; label validation error: missing key "app.kubernetes.io/managed-by": must be set to "Helm"; annotation validation error: missing key "meta.helm.sh/release-name": must be set to "sms-app"; annotation validation error: missing key "meta.helm.sh/release-namespace": must be set to "sms-app"
 

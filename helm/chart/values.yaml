@@ -99,40 +99,56 @@ monitoring:
 alerting:
   enabled: true
   email:
-    to: "you@example.com"
-    from: "noreply@example.com"
+    to: "team17-alerts@example.com"
+    from: "sms-app-alerts@example.com"
     smarthost: "smtp.gmail.com:587"
-    username: "you@example.com"
+    username: "your-sender@gmail.com"
+    # PASSWORD IS NOT STORED HERE - it comes from pre-deployed 'smtp-credentials' Secret
 
-
+# kube-prometheus-stack subchart configuration
 kube-prometheus-stack:
+  enabled: true
+  prometheusOperator:
+    image:
+      registry: quay.io
+      repository: prometheus-operator/prometheus-operator
+      tag: v0.68.0
   alertmanager:
     enabled: true
+    # Use AlertmanagerConfig CRDs for routing (which support secretKeyRef)
+    alertmanagerSpec:
+      alertmanagerConfigSelector:
+        matchLabels:
+          alertmanagerConfig: '{{ .Release.Name }}'
+      alertmanagerConfigNamespaceSelector: {}
+    # Base config - routes are extended by AlertmanagerConfig CRD
     config:
       global:
         resolve_timeout: 5m
       route:
-        receiver: default
-        group_by: [ "alertname" ]
-        routes:
-          - matchers: [ severity = "critical" ]
-            receiver: default
+        receiver: 'null'
+        group_by: ['alertname']
       receivers:
-        - name: default
-          email_configs:
-            - to: "your-email@example.com"
-              from: "sms-app-alerts@example.com"
-              smarthost: "smtp.gmail.com:587"
-              auth_username: "your-email@example.com"
-              auth_password: "YOUR_SMTP_PASSWORD"
-              require_tls: true
+        - name: 'null'
+      # NO SMTP CREDENTIALS HERE - handled by AlertmanagerConfig CRD
 
-
-  grafana:
-    enabled: false
   prometheus:
     prometheusSpec:
       serviceMonitorSelector:
         matchLabels:
           monitoring: sms-app
       serviceMonitorNamespaceSelector: {}
+      ruleSelector:
+        matchLabels:
+          release: '{{ .Release.Name }}'
+      ruleNamespaceSelector: {}
+
+  # Disable components we don't need
+  grafana:
+    enabled: false  # We manage Grafana separately
+  
+  kubeStateMetrics:
+    enabled: true
+  
+  nodeExporter:
+    enabled: true

@@ -1,22 +1,22 @@
-{{- if and .Values.monitoring.enabled (index .Values "kube-prometheus-stack" "enabled") }}
+{{- if .Values.monitoring.enabled }}
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: {{ .Release.Name }}-traffic-alerts
-  namespace: {{ .Release.Namespace }}
+  name: {{ .Release.Name }}-app-alerts
+  namespace: {{ .Values.namespace.name }}
   labels:
     release: {{ .Release.Name }}
+    app.kubernetes.io/part-of: {{ .Release.Name }}
 spec:
   groups:
-    - name: traffic.rules
+    - name: sms-app.rules
       rules:
         - alert: HighRequestRate
-          expr: |
-            sum(rate(http_server_requests_seconds_count{namespace="{{ .Release.Namespace }}"}[1m])) > 15
+          expr: sum(rate(http_requests_total{namespace="{{ .Values.namespace.name }}"}[1m])) * 60 > 15
           for: 2m
           labels:
-            severity: warning
+            severity: critical
           annotations:
-            summary: "High request rate on {{`{{ $labels.namespace }}`}}"
-            description: "Requests per minute exceeded 15 for 2m."
+            summary: High request rate detected
+            description: Request rate exceeded 15/min for 2+ minutes
 {{- end }}
