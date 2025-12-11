@@ -64,6 +64,14 @@
       command: kubectl apply -f /tmp/metallb-config.yaml
 
     # Step 21: NGINX Ingress with HTTPS
+    
+    # Install Python kubernetes library (required for kubernetes.core.k8s module)
+    - name: Install python3-kubernetes via apt
+      apt:
+        name: python3-kubernetes
+        state: present
+        update_cache: yes
+
     - name: Create ingress-nginx namespace
       kubernetes.core.k8s:
         state: present
@@ -150,13 +158,6 @@
         chart_ref: "{{ kd_repo_name }}/kubernetes-dashboard"
         release_namespace: "{{ kd_ns }}"
         create_namespace: true
-
-    # Ensure Python client for Kubernetes is available (required by kubernetes.core.k8s)
-    - name: Install python3-kubernetes via apt
-      apt:
-        name: python3-kubernetes
-        state: present
-        update_cache: yes
 
     - name: Create admin ServiceAccount
       kubernetes.core.k8s:
