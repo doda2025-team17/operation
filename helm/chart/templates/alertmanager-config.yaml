@@ -1,0 +1,45 @@
+# AlertmanagerConfig CRD - uses secretKeyRef for SMTP password
+# This approach keeps credentials OUT of deployment files
+#
+# REQUIRES pre-deployed secret:
+# kubectl create secret generic smtp-credentials \
+#   --namespace=sms-app \
+#   --from-literal=password='your-smtp-app-password'
+
+{{- if and .Values.alerting.enabled (index .Values "kube-prometheus-stack" "alertmanager" "enabled") }}
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: {{ .Release.Name }}-email-config
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    release: {{ .Release.Name }}
+    alertmanagerConfig: {{ .Release.Name }}
+spec:
+  route:
+    receiver: 'email-notifications'
+    groupBy: ['alertname', 'severity']
+    groupWait: 30s
+    groupInterval: 5m
+    repeatInterval: 4h
+    matchers:
+      - name: severity
+        matchType: =~
+        value: "warning|critical"
+  receivers:
+    - name: 'email-notifications'
+      emailConfigs:
+        - to: '{{ .Values.alerting.email.to }}'
+          from: '{{ .Values.alerting.email.from }}'
+          smarthost: '{{ .Values.alerting.email.smarthost }}'
+          authUsername: '{{ .Values.alerting.email.username }}'
+          # Password is pulled from pre-deployed Secret - NOT in source code!
+          authPassword:
+            name: smtp-credentials
+            key: password
+          requireTLS: true
+          sendResolved: true
+          headers:
+            - key: Subject
+              value: '[SMS-App Alert] {{ "{{ .Status | toUpper }}" }}: {{ "{{ .CommonLabels.alertname }}" }}'
+{{- end }}

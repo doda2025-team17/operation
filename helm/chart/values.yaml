@@ -95,15 +95,60 @@ monitoring:
     model: /metrics
   scrapeInterval: 15s
 
+# Alerting
+alerting:
+  enabled: true
+  email:
+    to: "team17-alerts@example.com"
+    from: "sms-app-alerts@example.com"
+    smarthost: "smtp.gmail.com:587"
+    username: "your-sender@gmail.com"
+    # PASSWORD IS NOT STORED HERE - it comes from pre-deployed 'smtp-credentials' Secret
+
+# kube-prometheus-stack subchart configuration
 kube-prometheus-stack:
   enabled: true
+  prometheusOperator:
+    image:
+      registry: quay.io
+      repository: prometheus-operator/prometheus-operator
+      tag: v0.68.0
   alertmanager:
-    enabled: false
-  grafana:
-    enabled: false
+    enabled: true
+    # Use AlertmanagerConfig CRDs for routing (which support secretKeyRef)
+    alertmanagerSpec:
+      alertmanagerConfigSelector:
+        matchLabels:
+          alertmanagerConfig: '{{ .Release.Name }}'
+      alertmanagerConfigNamespaceSelector: {}
+    # Base config - routes are extended by AlertmanagerConfig CRD
+    config:
+      global:
+        resolve_timeout: 5m
+      route:
+        receiver: 'null'
+        group_by: ['alertname']
+      receivers:
+        - name: 'null'
+      # NO SMTP CREDENTIALS HERE - handled by AlertmanagerConfig CRD
+
   prometheus:
     prometheusSpec:
       serviceMonitorSelector:
         matchLabels:
           monitoring: sms-app
       serviceMonitorNamespaceSelector: {}
+      ruleSelector:
+        matchLabels:
+          release: '{{ .Release.Name }}'
+      ruleNamespaceSelector: {}
+
+  # Disable components we don't need
+  grafana:
+    enabled: false  # We manage Grafana separately
+  
+  kubeStateMetrics:
+    enabled: true
+  
+  nodeExporter:
+    enabled: true

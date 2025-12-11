@@ -1,9 +1,0 @@
-ingress:
-  hosts:
-    - host: custom-app.local
-      paths:
-        - path: /
-          pathType: Prefix
-
-secrets:
-  smtpPassword: "test-password-123"
