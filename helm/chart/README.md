@@ -363,4 +363,4 @@ helm upgrade --install sms-app helm/chart -n sms-app \
 ```
 ### Access
 
-Access grafana dashboard at `https://grafana.local/dashboards`
+Access grafana dashboard at https://grafana.local/dashboards
