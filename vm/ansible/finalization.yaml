@@ -17,6 +17,7 @@
     ingress_namespace: "ingress-nginx"
     ingress_lb_ip: "192.168.56.95"
     ingress_wait_timeout: "240s"
+    ingress_tls_secret: nginx-default-tls
 
     # Dashboard settings
     kd_ns: kubernetes-dashboard
@@ -25,6 +26,7 @@
     kd_repo_url: https://kubernetes.github.io/dashboard
     ingress_host: dashboard.local
     ingress_class: nginx
+    tls_secret_name: dashboard-tls
 
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf
@@ -61,14 +63,45 @@
     - name: Apply MetalLB address pool configuration
       command: kubectl apply -f /tmp/metallb-config.yaml
 
-    # Step 21: NGINX Ingress
+    # Step 21: NGINX Ingress with HTTPS
+    
+    # Install Python kubernetes library (required for kubernetes.core.k8s module)
+    - name: Install python3-kubernetes via apt
+      apt:
+        name: python3-kubernetes
+        state: present
+        update_cache: yes
+
+    - name: Create ingress-nginx namespace
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: "{{ ingress_namespace }}"
+
+    - name: Create default TLS secret for NGINX Ingress
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: "{{ ingress_tls_secret }}"
+            namespace: "{{ ingress_namespace }}"
+          type: kubernetes.io/tls
+          data:
+            tls.crt: "{{ lookup('file', playbook_dir + '/../certs/nginx-default-tls.crt') | b64encode }}"
+            tls.key: "{{ lookup('file', playbook_dir + '/../certs/nginx-default-tls.key') | b64encode }}"
+
     - name: Add ingress-nginx Helm repo
       kubernetes.core.helm_repository:
         name: ingress-nginx
         repo_url: https://kubernetes.github.io/ingress-nginx
       register: ingress_repo
 
-    - name: Install/upgrade NGINX Ingress Controller
+    - name: Install/upgrade NGINX Ingress Controller with HTTPS
       kubernetes.core.helm:
         name: ingress-nginx
         chart_ref: ingress-nginx/ingress-nginx
@@ -84,6 +117,13 @@
             ingressClassResource:
               default: true
             ingressClass: nginx
+            extraArgs:
+              default-ssl-certificate: "{{ ingress_namespace }}/{{ ingress_tls_secret }}"
+            config:
+              ssl-redirect: "true"
+              force-ssl-redirect: "true"
+              hsts: "true"
+              hsts-max-age: "31536000"
 
     - name: Wait for ingress controller pod to be Ready
       command: >
@@ -120,13 +160,6 @@
         release_namespace: "{{ kd_ns }}"
         create_namespace: true
 
-    # Ensure Python client for Kubernetes is available (required by kubernetes.core.k8s)
-    - name: Install python3-kubernetes via apt
-      apt:
-        name: python3-kubernetes
-        state: present
-        update_cache: yes
-
     - name: Create admin ServiceAccount
       kubernetes.core.k8s:
         state: present
@@ -154,7 +187,22 @@
             name: cluster-admin
             apiGroup: rbac.authorization.k8s.io
 
-    - name: Apply Dashboard Ingress
+    # Step 22a: Create TLS secret from pre-provided certificates
+    - name: Create TLS secret for Dashboard
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: "{{ tls_secret_name }}"
+            namespace: "{{ kd_ns }}"
+          type: kubernetes.io/tls
+          data:
+            tls.crt: "{{ lookup('file', playbook_dir + '/../certs/dashboard-tls.crt') | b64encode }}"
+            tls.key: "{{ lookup('file', playbook_dir + '/../certs/dashboard-tls.key') | b64encode }}"
+
+    - name: Apply Dashboard Ingress with TLS
       kubernetes.core.k8s:
         state: present
         definition:
@@ -167,6 +215,10 @@
               nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
           spec:
             ingressClassName: "{{ ingress_class }}"
+            tls:
+              - hosts:
+                  - "{{ ingress_host }}"
+                secretName: "{{ tls_secret_name }}"
             rules:
               - host: "{{ ingress_host }}"
                 http:
