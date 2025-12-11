@@ -99,6 +99,7 @@
       kubernetes.core.helm_repository:
         name: ingress-nginx
         repo_url: https://kubernetes.github.io/ingress-nginx
+      register: ingress_repo
 
     - name: Install/upgrade NGINX Ingress Controller with HTTPS
       kubernetes.core.helm:
@@ -146,7 +147,7 @@
         fail_msg: "Ingress Service EXTERNAL-IP ({{ svc_ip.stdout }}) does not match expected {{ ingress_lb_ip }}"
         success_msg: "Ingress Service EXTERNAL-IP correctly set to {{ ingress_lb_ip }}"
 
-    # Step 22: Kubernetes Dashboard
+    # Step 22: Install and show Kubernetes Dashboard
     - name: Add Helm repo for Kubernetes Dashboard
       kubernetes.core.helm_repository:
         name: "{{ kd_repo_name }}"
