@@ -25,6 +25,7 @@
     kd_repo_url: https://kubernetes.github.io/dashboard
     ingress_host: dashboard.local
     ingress_class: nginx
+    tls_secret_name: dashboard-tls
 
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf
@@ -154,7 +155,22 @@
             name: cluster-admin
             apiGroup: rbac.authorization.k8s.io
 
-    - name: Apply Dashboard Ingress
+    # Step 22a: Create TLS secret from pre-provided certificates
+    - name: Create TLS secret for Dashboard
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: "{{ tls_secret_name }}"
+            namespace: "{{ kd_ns }}"
+          type: kubernetes.io/tls
+          data:
+            tls.crt: "{{ lookup('file', playbook_dir + '/../certs/dashboard-tls.crt') | b64encode }}"
+            tls.key: "{{ lookup('file', playbook_dir + '/../certs/dashboard-tls.key') | b64encode }}"
+
+    - name: Apply Dashboard Ingress with TLS
       kubernetes.core.k8s:
         state: present
         definition:
@@ -167,6 +183,10 @@
               nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
           spec:
             ingressClassName: "{{ ingress_class }}"
+            tls:
+              - hosts:
+                  - "{{ ingress_host }}"
+                secretName: "{{ tls_secret_name }}"
             rules:
               - host: "{{ ingress_host }}"
                 http:
