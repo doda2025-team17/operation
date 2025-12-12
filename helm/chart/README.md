@@ -11,6 +11,9 @@ This chart deploys the SMS spam detection stack (Spring Boot app and Python mode
 
 ## First-Time Setup
 
+Add this if not present to `/etc/hosts/`:
+`192.168.56.95  grafana.local dashboard.local sms-app.local`
+
 From the operations repo:
 ```bash
 # Point to the kubeconfig file you plan to use (your own, or the one generated when provisioning)
@@ -325,6 +328,40 @@ kubectl create secret generic smtp-credentials \
   --from-literal=password='<YOUR_SMTP_APP_PASSWORD>'
 ```
 
+After creating secret verify it exists by running:
+`kubectl get secret smtp-credentials -n sms-app`
+
+### Access Prometheus UI and Alertmanager UI
+From terminal 1 run:
+
+`kubectl -n sms-app port-forward svc/sms-app-kube-prometheus-st-prometheus 9090:9090`
+
+From terminal 2 run:
+
+`kubectl -n sms-app port-forward svc/sms-app-kube-prometheus-st-alertmanager 9093:9093`
+
+Then open:
+- Prometheus UI: http://localhost:9090/alerts
+- Alertmanager UI: http://localhost:9093
+
+## Verify it works
+
+From terminal 3 trigger the alert:
+
+`kubectl -n sms-app port-forward svc/sms-app-app 8080:80`
+
+From terminal 4 run:
+
+```bash
+end=$((SECONDS+150))
+while [ $SECONDS -lt $end ]; do
+  for i in {1..40}; do curl -s http://localhost:8080/ >/dev/null & done
+  wait
+  sleep 1
+done
+```
+
+
 ### Error handling
 When you encounter:
 Error: unable to continue with install: Namespace "sms-app" in namespace "" exists and cannot be imported into the current release: invalid ownership metadata; label validation error: missing key "app.kubernetes.io/managed-by": must be set to "Helm"; annotation validation error: missing key "meta.helm.sh/release-name": must be set to "sms-app"; annotation validation error: missing key "meta.helm.sh/release-namespace": must be set to "sms-app"
@@ -333,3 +370,38 @@ Try to delete existing namespace:
 ```
 kubectl delete ns sms-app
 ```
+
+## Grafana
+
+### If not already running because of previous steps:
+
+First do commands from [Buuld docker images for monitoring and alerting](#build-docker-images-for-monitoring-and-alerting)
+
+```bash
+helm dependency build helm/chart
+
+helm upgrade --install sms-app helm/chart -n sms-app \
+  --create-namespace \
+  --set secrets.smtpPassword="YOUR_SMTP_PASSWORD" \
+  --set alerting.enabled=true \
+  --set alerting.email.to="your-email@example.com" \
+  --set alerting.email.from="sms-app-alerts@example.com" \
+  --set alerting.email.username="your-email@example.com" \
+  --set alerting.email.smarthost="smtp.gmail.com:587" \
+  --set app.image.repository=ghcr.io/doda2025-team17/app \
+  --set app.image.tag=alerting \
+  --set modelService.image.repository=ghcr.io/doda2025-team17/model-service \
+  --set modelService.image.tag=alerting \
+  --set imagePullSecrets[0].name=ghcr-cred
+  # --set "imagePullSecrets[0].name=ghcr-cred" #replace above with this line if you encountet "no mathces found: imagePullSecrets...."
+```
+### Access
+
+Access grafana dashboard at http://grafana.local/dashboards
+
+Username: admin
+Password: admin
+
+Skip the prompt that asks you to update the password.
+
+Go into Dashboards -> SMS App
