@@ -397,4 +397,11 @@ helm upgrade --install sms-app helm/chart -n sms-app \
 ```
 ### Access
 
-Access grafana dashboard at https://grafana.local/dashboards
+Access grafana dashboard at http://grafana.local/dashboards
+
+Username: admin
+Password: admin
+
+Skip the prompt that asks you to update the password.
+
+Go into Dashboards -> SMS App
