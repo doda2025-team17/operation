@@ -1,0 +1,26 @@
+{{- if .Values.istio.enabled }}
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: {{ .Values.istio.gateway.name }}
+  namespace: {{ .Values.namespace.name | default .Release.Namespace }}
+  labels:
+    {{- include "sms-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: istio-gateway
+spec:
+  selector:
+    {{- toYaml .Values.istio.gateway.selector | nindent 4 }}
+  servers:
+    - port:
+        number: {{ .Values.istio.gateway.port }}
+        name: http
+        protocol: HTTP
+      hosts:
+        {{- range .Values.istio.hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      {{- with .Values.istio.gateway.tls }}
+      tls:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

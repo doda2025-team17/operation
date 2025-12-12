@@ -1,0 +1,28 @@
+{{- if .Values.istio.enabled }}
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ include "sms-app.fullname" . }}-vs
+  namespace: {{ .Values.namespace.name | default .Release.Namespace }}
+  labels:
+    {{- include "sms-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: istio-virtualservice
+spec:
+  hosts:
+    {{- range .Values.istio.hosts }}
+    - {{ . | quote }}
+    {{- end }}
+  gateways:
+    - {{ .Values.istio.gateway.name }}
+  http:
+    - name: app-canary
+      route:
+        - destination:
+            host: {{ include "sms-app.app.name" . }}
+            subset: {{ .Values.istio.canary.stableSubset }}
+          weight: {{ .Values.istio.canary.weights.stable }}
+        - destination:
+            host: {{ include "sms-app.app.name" . }}
+            subset: {{ .Values.istio.canary.canarySubset }}
+          weight: {{ .Values.istio.canary.weights.canary }}
+{{- end }}

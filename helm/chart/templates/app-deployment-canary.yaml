@@ -1,27 +1,44 @@
+{{- if .Values.app.canary.enabled }}
+{{- $namespace := .Values.namespace.name | default .Release.Namespace }}
+{{- $repo := .Values.app.canary.image.repository | default .Values.app.image.repository }}
+{{- $tag := .Values.app.canary.image.tag | default .Values.app.image.tag }}
+{{- $pullPolicy := .Values.app.canary.image.pullPolicy | default .Values.app.image.pullPolicy }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "sms-app.app.name" . }}
-  namespace: {{ .Values.namespace.name | default .Release.Namespace }}
+  name: {{ include "sms-app.app.name" . }}-canary
+  namespace: {{ $namespace }}
   labels:
     {{- include "sms-app.componentLabels" (dict "context" . "name" (include "sms-app.app.name" .) "component" "app") | nindent 4 }}
+    app.kubernetes.io/role: canary
 spec:
-  replicas: {{ .Values.app.replicaCount }}
+  replicas: {{ .Values.app.canary.replicaCount }}
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "sms-app.app.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
-      version: {{ .Values.app.versionLabel | quote }}
+      version: {{ .Values.app.canary.versionLabel | quote }}
   template:
     metadata:
       labels:
         {{- include "sms-app.componentLabels" (dict "context" . "name" (include "sms-app.app.name" .) "component" "app") | nindent 8 }}
-        version: {{ .Values.app.versionLabel | quote }}
+        app.kubernetes.io/role: canary
+        version: {{ .Values.app.canary.versionLabel | quote }}
+      {{- $hasAnnotations := or .Values.app.podAnnotations .Values.app.canary.podAnnotations }}
+      {{- if $hasAnnotations }}
+      annotations:
+        {{- with .Values.app.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- with .Values.app.canary.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}
     spec:
       containers:
         - name: app-service
-          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}"
-          imagePullPolicy: {{ .Values.app.image.pullPolicy }}
+          image: "{{ $repo }}:{{ $tag }}"
+          imagePullPolicy: {{ $pullPolicy }}
           ports:
             - containerPort: {{ .Values.app.containerPort }}
           env:
@@ -52,3 +69,4 @@ spec:
               port: {{ .Values.app.containerPort }}
             initialDelaySeconds: {{ .Values.app.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.app.livenessProbe.periodSeconds }}
+{{- end }}
