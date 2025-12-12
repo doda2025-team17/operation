@@ -211,4 +211,4 @@ kube-prometheus-stack:
     enabled: true
   
   nodeExporter:
-    enabled: true
+
