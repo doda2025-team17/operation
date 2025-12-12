@@ -100,6 +100,7 @@ No work
 - reviewed other people's PRs
 
 ### Nicholas
+
 - Responsible for the Helm Chart Implementation (PR [#37] https://github.com/doda2025-team17/operation/pull/37)
 - Reviewed PR's of the team
 - Help test and finish assignment 2
@@ -113,6 +114,11 @@ No work
 ### Kristian
 
 ### Ana
+
+- implemented grafana (PR [#46](https://github.com/doda2025-team17/operation/pull/46))
+- improved assignment 2 to satisfy excellent requirements (PR [#45](https://github.com/doda2025-team17/operation/pull/45))
+- helped in finishing alerting task (PR [#44](https://github.com/doda2025-team17/operation/pull/44))
+- helped in finishing monitoring task (PR [#41](https://github.com/doda2025-team17/operation/pull/41))
 
 ### Nicholas
 
