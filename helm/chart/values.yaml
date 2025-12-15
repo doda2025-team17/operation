@@ -19,6 +19,17 @@ grafana:
 
 app:
   replicaCount: 2
+  versionLabel: v1
+  # Canary deployment settings (traffic split is controlled via istio.canary.weights)
+  canary:
+    enabled: false
+    replicaCount: 1
+    versionLabel: v2
+    image:
+      repository: ""
+      tag: ""
+      pullPolicy: ""
+    podAnnotations: {}
   image:
     repository: ghcr.io/doda2025-team17/app
     tag: latest
@@ -80,6 +91,29 @@ ingress:
         - path: /
           pathType: Prefix
   tls: []
+
+# Istio traffic management (Gateway/VirtualService/DestinationRule for canary + sticky sessions)
+istio:
+  enabled: false
+  hosts:
+    - sms-app.local
+  gateway:
+    name: sms-app-gateway
+    port: 80
+    selector:
+      istio: ingressgateway
+    tls: {}
+  canary:
+    stableSubset: v1
+    canarySubset: v2
+    weights:
+      stable: 90
+      canary: 10
+    subsetLabelKey: version
+    stickyCookie:
+      enabled: true
+      name: sms-app-session
+      ttl: 1h
 
 # Monitoring / Prometheus setup
 monitoring:
@@ -172,9 +206,3 @@ kube-prometheus-stack:
       hosts:
         - grafana.local
       path: /
-  
-  kubeStateMetrics:
-    enabled: true
-  
-  nodeExporter:
-    enabled: true

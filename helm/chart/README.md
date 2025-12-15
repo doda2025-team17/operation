@@ -100,6 +100,13 @@ curl http://sms-app.local
 | `config.*` | ConfigMap values (auto-wired if empty) | - |
 | `monitoring.*` | ServiceMonitor labels, metrics ports/paths, scrape interval, toggle monitoring with `monitoring enabled`. |
 | `kube-prometheus-stack.*` | toggle the bundled Prometheus dependency |
+| `app.versionLabel` | Version label applied to the stable app pods | `v1` |
+| `app.canary.*` | Enable a second app deployment with its own tag/version label | disabled |
+| `istio.enabled` | Toggle Istio Gateway/VirtualService/DestinationRule resources | `false` |
+| `istio.canary.weights.{stable,canary}` | Weighted routing between stable and canary subsets | `90/10` |
+| `istio.canary.subsetLabelKey` | Pod label key used for Istio subsets | `version` |
+| `istio.canary.stickyCookie.enabled` | Toggle sticky sessions (consistent hash by cookie) | `true` |
+| `istio.canary.stickyCookie.{name,ttl}` | Sticky session cookie name/TTL (when enabled) | `sms-app-session` / `1h` |
 
 ## Notes
 
@@ -198,7 +205,6 @@ kubectl get pods -n ingress-nginx
 
 # Check ingress configuration
 kubectl describe ingress -n sms-app
-```
 
 ### Image pull errors
 
@@ -405,3 +411,61 @@ Password: admin
 Skip the prompt that asks you to update the password.
 
 Go into Dashboards -> SMS App
+
+### ISTIO Canary
+
+helm uninstall sms-app --namespace sms-app
+
+## Testing 
+```bash
+
+helm dependency build helm/chart
+
+helm uninstall sms-app --namespace sms-app
+
+# Deploy with Istio + canary (adjust host/gateway selector/tag as needed)
+helm upgrade --install sms-app helm/chart -n sms-app \
+  --create-namespace \
+  --set secrets.smtpPassword="YOUR_SMTP_PASSWORD" \
+  --set alerting.enabled=true \
+  --set alerting.email.to="your-email@example.com" \
+  --set alerting.email.from="sms-app-alerts@example.com" \
+  --set alerting.email.username="your-email@example.com" \
+  --set alerting.email.smarthost="smtp.gmail.com:587" \
+  --set app.image.repository=ghcr.io/doda2025-team17/app \
+  --set app.image.tag=latest \
+  --set app.canary.enabled=true \
+  --set app.canary.image.tag=0.01 \
+  --set app.versionLabel=v1 \
+  --set app.canary.versionLabel=v2 \
+  --set modelService.image.repository=ghcr.io/doda2025-team17/model-service \
+  --set modelService.image.tag=alerting \
+  --set "imagePullSecrets[0].name=ghcr-cred" \
+  --set ingress.enabled=false \
+  --set istio.enabled=true \
+  --set "istio.hosts[0]=sms-app.local" \
+  --set istio.gateway.selector.istio=ingressgateway
+  ## if you want to set other weights:
+  # --set istio.canary.weights.stable=0 \
+  # --set istio.canary.weights.canary=100 \
+  ## add when you want to deactivate sticky sessions
+  # --set istio.canary.stickyCookie.enabled=false 
+
+# Enable sidecar injection once
+kubectl label ns sms-app istio-injection=enabled --overwrite
+
+# check the canary weight #should be 90/10 split
+kubectl get vs sms-app-vs -n sms-app -o yaml | sed -n '/route:/,/subsets:/p'
+
+
+# Get ingress IP (default Istio ingress gateway)
+INGRESS_IP=$(kubectl get svc istio-ingressgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+# Check sticky session: If output is the same, its correct. However we currently dont have different versions?
+for i in {1..10}; do
+  curl -s -H "Host: sms-app.local" "http://${INGRESS_IP}/" | grep -i version
+done
+
+# Verify Istio resources exist
+kubectl get gateway,virtualservice,destinationrule -n sms-app
+```

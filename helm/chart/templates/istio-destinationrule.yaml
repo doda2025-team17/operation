@@ -1,0 +1,27 @@
+{{- if .Values.istio.enabled }}
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: {{ include "sms-app.fullname" . }}-dr
+  namespace: {{ .Values.namespace.name | default .Release.Namespace }}
+  labels:
+    {{- include "sms-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: istio-destinationrule
+spec:
+  host: {{ include "sms-app.app.name" . }}
+  {{- if .Values.istio.canary.stickyCookie.enabled }}
+  trafficPolicy:
+    loadBalancer:
+      consistentHash:
+        httpCookie:
+          name: {{ .Values.istio.canary.stickyCookie.name }}
+          ttl: {{ .Values.istio.canary.stickyCookie.ttl }}
+  {{- end }}
+  subsets:
+    - name: {{ .Values.istio.canary.stableSubset }}
+      labels:
+        {{ .Values.istio.canary.subsetLabelKey }}: {{ .Values.istio.canary.stableSubset }}
+    - name: {{ .Values.istio.canary.canarySubset }}
+      labels:
+        {{ .Values.istio.canary.subsetLabelKey }}: {{ .Values.istio.canary.canarySubset }}
+{{- end }}
