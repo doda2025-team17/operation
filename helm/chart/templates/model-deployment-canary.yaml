@@ -1,27 +1,34 @@
+{{- if and .Values.istio.enabled .Values.modelService.canary.enabled }}
+{{- $namespace := .Values.namespace.name | default .Release.Namespace }}
+{{- $repo := .Values.modelService.canary.image.repository | default .Values.modelService.image.repository }}
+{{- $tag := .Values.modelService.canary.image.tag | default .Values.modelService.image.tag }}
+{{- $pullPolicy := .Values.modelService.canary.image.pullPolicy | default .Values.modelService.image.pullPolicy }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "sms-app.model.name" . }}
-  namespace: {{ .Values.namespace.name | default .Release.Namespace }}
+  name: {{ include "sms-app.model.name" . }}-canary
+  namespace: {{ $namespace }}
   labels:
     {{- include "sms-app.componentLabels" (dict "context" . "name" (include "sms-app.model.name" .) "component" "model") | nindent 4 }}
+    app.kubernetes.io/role: canary
 spec:
-  replicas: {{ .Values.modelService.replicaCount }}
+  replicas: {{ .Values.modelService.canary.replicaCount | default 1 }}
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "sms-app.model.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
-      version: {{ .Values.modelService.versionLabel | default .Values.app.versionLabel | quote }}
+      version: {{ .Values.modelService.canary.versionLabel | default .Values.app.canary.versionLabel | quote }}
   template:
     metadata:
       labels:
         {{- include "sms-app.componentLabels" (dict "context" . "name" (include "sms-app.model.name" .) "component" "model") | nindent 8 }}
-        version: {{ .Values.modelService.versionLabel | default .Values.app.versionLabel | quote }}
+        app.kubernetes.io/role: canary
+        version: {{ .Values.modelService.canary.versionLabel | default .Values.app.canary.versionLabel | quote }}
     spec:
       containers:
         - name: model-service
-          image: "{{ .Values.modelService.image.repository }}:{{ .Values.modelService.image.tag }}"
-          imagePullPolicy: {{ .Values.modelService.image.pullPolicy }}
+          image: "{{ $repo }}:{{ $tag }}"
+          imagePullPolicy: {{ $pullPolicy }}
           ports:
             - containerPort: {{ .Values.modelService.containerPort }}
           env:
@@ -56,3 +63,4 @@ spec:
             path: {{ .Values.modelService.volume.hostPath }}
             type: DirectoryOrCreate
       {{- end }}
+{{- end }}
