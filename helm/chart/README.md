@@ -414,12 +414,14 @@ Go into Dashboards -> SMS App
 
 ### ISTIO Canary
 
+helm uninstall sms-app --namespace sms-app
+
 ## Testing 
 ```bash
-# Enable sidecar injection once
-kubectl label ns sms-app istio-injection=enabled --overwrite
 
 helm dependency build helm/chart
+
+helm uninstall sms-app --namespace sms-app
 
 # Deploy with Istio + canary (adjust host/gateway selector/tag as needed)
 helm upgrade --install sms-app helm/chart -n sms-app \
@@ -442,12 +444,15 @@ helm upgrade --install sms-app helm/chart -n sms-app \
   --set ingress.enabled=false \
   --set istio.enabled=true \
   --set "istio.hosts[0]=sms-app.local" \
-  --set istio.gateway.selector.istio=ingressgateway 
+  --set istio.gateway.selector.istio=ingressgateway
   ## if you want to set other weights:
   # --set istio.canary.weights.stable=0 \
   # --set istio.canary.weights.canary=100 \
   ## add when you want to deactivate sticky sessions
   # --set istio.canary.stickyCookie.enabled=false 
+
+# Enable sidecar injection once
+kubectl label ns sms-app istio-injection=enabled --overwrite
 
 # check the canary weight #should be 90/10 split
 kubectl get vs sms-app-vs -n sms-app -o yaml | sed -n '/route:/,/subsets:/p'
@@ -456,7 +461,7 @@ kubectl get vs sms-app-vs -n sms-app -o yaml | sed -n '/route:/,/subsets:/p'
 # Get ingress IP (default Istio ingress gateway)
 INGRESS_IP=$(kubectl get svc istio-ingressgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
-# Check sticky session: If output is the same, its correct.
+# Check sticky session: If output is the same, its correct. However we currently dont have different versions?
 for i in {1..10}; do
   curl -s -H "Host: sms-app.local" "http://${INGRESS_IP}/" | grep -i version
 done
