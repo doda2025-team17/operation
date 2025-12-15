@@ -95,7 +95,8 @@ helm upgrade --install sms-app helm/chart -n sms-app \
   --set secrets.smtpPassword=whatever \
   --set ingress.enabled=false \
   --set istio.enabled=true \
-  --set app.canary.enabled=true
+  --set "istio.hosts[0]=sms-app.local" \
+  --set istio.gateway.selector.istio=ingressgateway
 
 # Enable sidecar injection
 kubectl label ns sms-app istio-injection=enabled --overwrite
@@ -117,7 +118,8 @@ helm upgrade --install sms-app helm/chart -n sms-app \
   --set kube-prometheus-stack.nodeExporter.enabled=true \
   --set ingress.enabled=false \
   --set istio.enabled=true \
-  --set app.canary.enabled=true
+  --set "istio.hosts[0]=sms-app.local" \
+  --set istio.gateway.selector.istio=ingressgateway
 
 kubectl label ns sms-app istio-injection=enabled --overwrite
 ```
