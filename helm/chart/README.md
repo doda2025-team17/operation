@@ -183,7 +183,7 @@ curl http://sms-app.local
 | Service | URL | Notes |
 |---------|-----|-------|
 | App | http://sms-app.local | Via NGINX Ingress |
-| App (Istio) | http://sms-istio.local | Via Istio Gateway (use Host header) |
+| App (Istio) | http://sms-istio.local | Via Istio Gateway |
 | Grafana | http://grafana.local | Login: admin/admin |
 | Prometheus | `kubectl port-forward svc/sms-app-kube-prometheus-st-prometheus 9090:9090 -n sms-app` | http://localhost:9090 |
 | AlertManager | `kubectl port-forward svc/sms-app-kube-prometheus-st-alertmanager 9093:9093 -n sms-app` | http://localhost:9093 |
