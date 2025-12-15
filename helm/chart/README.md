@@ -110,10 +110,14 @@ helm upgrade --install sms-app helm/chart -n sms-app \
   --set secrets.smtpPassword=whatever \
   --set monitoring.enabled=true \
   --set alerting.enabled=true \
-  --set kube-prometheus-stack.enabled=true \
+  --set kube-prometheus-stack.prometheus.enabled=true \
+  --set kube-prometheus-stack.alertmanager.enabled=true \
+  --set kube-prometheus-stack.grafana.enabled=true \
+  --set kube-prometheus-stack.kubeStateMetrics.enabled=true \
+  --set kube-prometheus-stack.nodeExporter.enabled=true \
+  --set ingress.enabled=false \
   --set istio.enabled=true \
-  --set app.canary.enabled=true \
-  --set ingress.enabled=false
+  --set app.canary.enabled=true
 
 kubectl label ns sms-app istio-injection=enabled --overwrite
 ```
