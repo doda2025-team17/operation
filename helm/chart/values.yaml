@@ -206,9 +206,3 @@ kube-prometheus-stack:
       hosts:
         - grafana.local
       path: /
-  
-  kubeStateMetrics:
-    enabled: true
-  
-  nodeExporter:
-
