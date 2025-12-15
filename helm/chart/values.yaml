@@ -117,7 +117,7 @@ istio:
 
 # Monitoring / Prometheus setup
 monitoring:
-  enabled: true
+  enabled: false
   serviceMonitor:
     labelKey: monitoring
     labelValue: sms-app
@@ -131,7 +131,7 @@ monitoring:
 
 # Alerting
 alerting:
-  enabled: true
+  enabled: false
   email:
     to: "team17-alerts@example.com"
     from: "sms-app-alerts@example.com"
@@ -150,7 +150,7 @@ kube-prometheus-stack:
       tag: v0.68.0
 
   alertmanager:
-    enabled: true
+    enabled: false
     # Use AlertmanagerConfig CRDs for routing (which support secretKeyRef)
     alertmanagerSpec:
       alertmanagerConfigSelector:
@@ -181,7 +181,7 @@ kube-prometheus-stack:
 
   # Enable Grafana
   grafana:
-    enabled: true
+    enabled: false
     
     image:
       repository: grafana/grafana
