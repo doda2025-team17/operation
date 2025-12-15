@@ -38,13 +38,6 @@ Your PAT needs `repo`, `write:packages`, and `read:packages` privileges.
 
 ```bash
 mvn clean package -DskipTests
-docker build --no-cache --build-arg GITHUB_TOKEN="$GHCR_PAT" -t ghcr.io/doda2025-team17/app:latest .
-docker push ghcr.io/doda2025-team17/app:latest
-```
-
-if using linux do this instead because of architecture mismatch issues:
-```bash
-mvn clean package -DskipTests
 docker build --platform linux/amd64 --no-cache --build-arg GITHUB_TOKEN="$GHCR_PAT" -t ghcr.io/doda2025-team17/app:latest .
 docker push ghcr.io/doda2025-team17/app:latest
 ```
@@ -95,7 +88,6 @@ helm upgrade --install sms-app helm/chart -n sms-app \
 ```bash
 helm upgrade --install sms-app helm/chart -n sms-app \
   --set secrets.smtpPassword=whatever \
-  --set ingress.enabled=false \
   --set istio.enabled=true \
   --set app.canary.enabled=true \
   --set "istio.hosts[0]=sms-istio.local"
@@ -118,7 +110,6 @@ helm upgrade --install sms-app helm/chart -n sms-app \
   --set kube-prometheus-stack.grafana.enabled=true \
   --set kube-prometheus-stack.kubeStateMetrics.enabled=true \
   --set kube-prometheus-stack.nodeExporter.enabled=true \
-  --set ingress.enabled=false \
   --set istio.enabled=true \
   --set app.canary.enabled=true \
   --set "istio.hosts[0]=sms-istio.local"
@@ -185,8 +176,8 @@ curl http://sms-app.local
 | App | http://sms-app.local | Via NGINX Ingress |
 | App (Istio) | http://sms-istio.local | Via Istio Gateway |
 | Grafana | http://grafana.local | Login: admin/admin |
-| Prometheus | `kubectl port-forward svc/sms-app-kube-prometheus-st-prometheus 9090:9090 -n sms-app` | http://localhost:9090 |
-| AlertManager | `kubectl port-forward svc/sms-app-kube-prometheus-st-alertmanager 9093:9093 -n sms-app` | http://localhost:9093 |
+| Prometheus | http://localhost:9090 | port forward: `kubectl port-forward svc/sms-app-kube-prometheus-st-prometheus 9090:9090 -n sms-app` (run `export KUBECONFIG=vm/kubeconfig` before) | 
+| AlertManager | http://localhost:9093 | port forward `kubectl port-forward svc/sms-app-kube-prometheus-st-alertmanager 9093:9093 -n sms-app` (run `export KUBECONFIG=vm/kubeconfig ` before) |
 
 ## Testing
 
@@ -194,9 +185,13 @@ curl http://sms-app.local
 
 ```bash
 # Terminal 1: Port-forward app
+export KUBECONFIG=vm/kubeconfig
+
 kubectl port-forward svc/sms-app-app 8080:80 -n sms-app
 
 # Terminal 2: Generate traffic (triggers HighRequestRate alert after 2min)
+export KUBECONFIG=vm/kubeconfig
+
 end=$((SECONDS+150))
 while [ $SECONDS -lt $end ]; do
   for i in {1..40}; do curl -s http://localhost:8080/ >/dev/null & done
@@ -310,6 +305,16 @@ helm upgrade --install sms-app helm/chart -n sms-app \
 ```
 
 ## Troubleshooting
+
+### KVM kernel extension error
+Run
+```bash
+sudo modprobe -r kvm_amd kvm
+```
+or (if the first one doesn't work)
+```bash
+echo -e "blacklist kvm\nblacklist kvm_amd" | sudo tee /etc/modprobe.d/blacklist-kvm.conf
+```
 
 ### Helm upgrade hangs
 ```bash

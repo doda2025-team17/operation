@@ -2,3 +2,4 @@
 vm/kubeconfig
 vm/ansible/vm-ssh-keys
 helm/chart/secrets.yaml
+cookies.txt
