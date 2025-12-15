@@ -15,6 +15,7 @@ Deploys the SMS spam detection stack (Spring Boot app + Python model service) to
 # Setup (once) -> run from operation folder
 export KUBECONFIG=vm/kubeconfig
 echo "192.168.56.95 sms-app.local grafana.local dashboard.local" | sudo tee -a /etc/hosts
+echo "192.168.56.96 sms-istio.local" | sudo tee -a /etc/hosts
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
 helm dependency build helm/chart
@@ -90,13 +91,14 @@ helm upgrade --install sms-app helm/chart -n sms-app \
 ```
 
 ### With Istio Canary
+
 ```bash
 helm upgrade --install sms-app helm/chart -n sms-app \
   --set secrets.smtpPassword=whatever \
   --set ingress.enabled=false \
   --set istio.enabled=true \
-  --set "istio.hosts[0]=sms-app.local" \
-  --set istio.gateway.selector.istio=ingressgateway
+  --set app.canary.enabled=true \
+  --set "istio.hosts[0]=sms-istio.local"
 
 # Enable sidecar injection
 kubectl label ns sms-app istio-injection=enabled --overwrite
@@ -118,8 +120,8 @@ helm upgrade --install sms-app helm/chart -n sms-app \
   --set kube-prometheus-stack.nodeExporter.enabled=true \
   --set ingress.enabled=false \
   --set istio.enabled=true \
-  --set "istio.hosts[0]=sms-app.local" \
-  --set istio.gateway.selector.istio=ingressgateway
+  --set app.canary.enabled=true \
+  --set "istio.hosts[0]=sms-istio.local"
 
 kubectl label ns sms-app istio-injection=enabled --overwrite
 ```
@@ -181,7 +183,7 @@ curl http://sms-app.local
 | Service | URL | Notes |
 |---------|-----|-------|
 | App | http://sms-app.local | Via NGINX Ingress |
-| App (Istio) | http://192.168.56.96 | Via Istio Gateway (use Host header) |
+| App (Istio) | http://sms-istio.local | Via Istio Gateway (use Host header) |
 | Grafana | http://grafana.local | Login: admin/admin |
 | Prometheus | `kubectl port-forward svc/sms-app-kube-prometheus-st-prometheus 9090:9090 -n sms-app` | http://localhost:9090 |
 | AlertManager | `kubectl port-forward svc/sms-app-kube-prometheus-st-alertmanager 9093:9093 -n sms-app` | http://localhost:9093 |
@@ -233,22 +235,28 @@ helm upgrade --install sms-app helm/chart -n sms-app \
 ### Test Istio Canary Routing
 
 ```bash
+# Get Istio IngressGateway IP
 INGRESS_IP=$(kubectl get svc istio-ingressgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
-# Test weighted routing (90/10 split)
+echo $INGRESS_IP  # Should be 192.168.56.96
+
+# Test basic access
+curl -H "Host: sms-istio.local" http://$INGRESS_IP/
+
+# Test weighted routing (run 10 times, ~90% v1, ~10% v2)
 for i in {1..10}; do
-  curl -s -H "Host: sms-app.local" http://$INGRESS_IP/ | grep -o 'version=[^"]*'
+  curl -s -H "Host: sms-istio.local" http://$INGRESS_IP/ | grep -o 'version=[^"]*' || echo "response received"
 done
 
-# Force canary via header
-curl -H "Host: sms-app.local" -H "x-version: canary" http://$INGRESS_IP/
+# Test header-based routing (force canary)
+curl -H "Host: sms-istio.local" -H "x-version: canary" http://$INGRESS_IP/
 
-# Test sticky session (cookie)
-curl -c cookies.txt -H "Host: sms-app.local" http://$INGRESS_IP/
-curl -b cookies.txt -H "Host: sms-app.local" http://$INGRESS_IP/  # Same version
+# Test sticky session
+curl -c cookies.txt -H "Host: sms-istio.local" http://$INGRESS_IP/
+curl -b cookies.txt -H "Host: sms-istio.local" http://$INGRESS_IP/  # Same version
 
-# Check routing config
-kubectl get vs sms-app-vs -n sms-app -o yaml | grep -A 20 "route:"
+# Check VirtualService routing config
+kubectl get vs -n sms-app -o yaml | grep -A 30 "http:"
 ```
 
 ### Test Grafana
