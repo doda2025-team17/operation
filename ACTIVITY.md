@@ -88,6 +88,10 @@ No work
 - Reviewed other peoples PRs
 
 ### Kristian
+- Helped with the testing of the fixes for module-service.
+- Reviewed PRs of my teammates.
+- Spent a lot of time trying to fix my WSL setup.
+- Started working on the Monitoring task.
 
 ### Ana
 
@@ -112,6 +116,8 @@ No work
 ### Arnav
 
 ### Kristian
+- Attended all of the team meetings.
+- Completed the Monitoring task (PR [#41](https://github.com/doda2025-team17/operation/pull/41)) in the "operation" repo, (PR [#18](https://github.com/doda2025-team17/app/pull/18)) in the "app" repo and (PR [#10](https://github.com/doda2025-team17/model-service/pull/10)) in the "model-service" repo.
 
 ### Ana
 
