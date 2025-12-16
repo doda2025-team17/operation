@@ -121,6 +121,8 @@ No work
 - helped in finishing monitoring task (PR [#41](https://github.com/doda2025-team17/operation/pull/41))
 
 ### Nicholas
+- Reviewed and tested numerous PR's from the team.
+- Attended the team meeting on Thurday.
 
 ## Week Q4.6 (Dec. 11 - 17)
 
@@ -133,6 +135,8 @@ No work
 ### Ana
 
 ### Nicholas
+- Reviewed numerous PR's from the team.
+- Implemented the Traffic Management part of Assignment 4 (PR [$48](https://github.com/doda2025-team17/operation/pull/48)).
 
 ## Week Q4.7 (Jan. 5 - 11)
 
