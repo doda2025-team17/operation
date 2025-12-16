@@ -2,12 +2,11 @@
 
 ## Week Q1.1 (Nov. 10 - 14)
 
-No work
+No work.
 
-## Week Q4.2 (Nov. 15 - 21)
+## Week Q4.2 (Nov. 17 - 23)
 
 ### Rebecca
-
 - attended all the team meetings (Tuesday, Thursday, and Friday)
 - completed F7, along with the README.md and ACTIVITY.md files (PR [#1](https://github.com/doda2025-team17/operation/pull/1)) and F8(PR [#4](https://github.com/doda2025-team17/model-service/pull/4) and [#3](https://github.com/doda2025-team17/app/pull/3))
 - reviewed a large number of other people's PRs
@@ -36,12 +35,12 @@ No work
 - Responsible for step 1 and 2. (PR [#5] https://github.com/doda2025-team17/app/pull/5)
 - Help finish the README (PR [#3] https://github.com/doda2025-team17/operation/pull/3)
 
-## Week Q4.3 (Nov. 21 - 27)
+## Week Q4.3 (Nov. 24 - 30)
 
 ### Rebecca
-
 - attended all team meetings (Sunday, Thursday, and Friday)
 - completed Steps 7-12 in PR [#8](https://github.com/doda2025-team17/operation/pull/8), [#9](https://github.com/doda2025-team17/operation/pull/9), and [#10](https://github.com/doda2025-team17/operation/pull/10)
+- generated an `inventory.cfg` file for Excellent requirement (PR [#21](https://github.com/doda2025-team17/operation/pull/21))
 - reviewed a large number of other people's PRs
 
 ### Arnav
@@ -67,15 +66,13 @@ No work
 ### Nicholas
 
 - Attended the meetings on Sunday and Thursday.
-- Responsible for steps 13 - 17 (in PR's [#11] https://github.com/doda2025-team17/operation/pull/11), [#12] https://github.com/doda2025-team17/operation/pull/12, [#13] https://github.com/doda2025-team17/operation/pull/13, and [#14] https://github.com/doda2025-team17/operation/pull/14.
+- Responsible for steps 13 - 17 (in PR's [#11](https://github.com/doda2025-team17/operation/pull/11)), [#12](https://github.com/doda2025-team17/operation/pull/12), [#13](https://github.com/doda2025-team17/operation/pull/13), and [#14](https://github.com/doda2025-team17/operation/pull/14).
 - Reviewed PR's from step 7-12, and some others.
 - Updated the README for Assignment 2.
 
-## Week Q4.4 (Nov. 28 - Dec. 4)
+## Week Q4.4 (Dec. 1 - Dec. 7)
 
 ### Rebecca
-
-- generated an `inventory.cfg` file for Excellent requirement (PR [#21](https://github.com/doda2025-team17/operation/pull/21))
 - completed the Ansible installation (PR [#26](https://github.com/doda2025-team17/operation/pull/26))
 - completed the Docker-compose to Kubernetes migration (PR [#34](https://github.com/doda2025-team17/operation/pull/34))
 - added Assignment 3 to the `README.md` file (PR [#38](https://github.com/doda2025-team17/operation/pull/38))
@@ -109,9 +106,12 @@ No work
 - Reviewed PR's of the team
 - Help test and finish assignment 2
 
-## Week Q4.5 (Dec. 4 - 10)
+## Week Q4.5 (Dec. 8 - 14)
 
 ### Rebecca
+- attended all team meetings
+- helped fix failing PRs ([here](https://github.com/doda2025-team17/operation/pull/41/commits/490d255bf929abe671f49c3cc85c6e8c42136b86))
+- reviewed other PRs
 
 ### Arnav
 
@@ -130,7 +130,7 @@ No work
 - Reviewed and tested numerous PR's from the team.
 - Attended the team meeting on Thurday.
 
-## Week Q4.6 (Dec. 11 - 17)
+## Week Q4.6 (Dec. 15 - 21)
 
 ### Rebecca
 
