@@ -37,6 +37,11 @@ spec:
                 configMapKeyRef:
                   name: {{ include "sms-app.fullname" . }}-config
                   key: MODEL_URL
+            - name: DASHBOARD_VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "sms-app.fullname" . }}-config
+                  key: DASHBOARD_VERSION
           {{- if .Values.modelService.readinessProbe.tcpSocket }}
           readinessProbe:
             tcpSocket:

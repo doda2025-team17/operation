@@ -1,0 +1,150 @@
+{{- if and .Values.monitoring.enabled (index .Values "kube-prometheus-stack" "grafana" "enabled") }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-experiment-dashboard
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    grafana_dashboard: sms-app
+  annotations:
+    grafana_folder: "SMS App"
+data: # THIS IS ONLY AN EXAMPLE, WE SHOULD CUSTOMIZE IT BASED ON OUR EXPERIMENT METRICS in A4
+  sms-app-experiment.json: |-
+    {
+        "title": "A4 Experiment - Canary vs Stable",
+        "panels": [
+            {
+            "title": "Request Rate Comparison (v1 vs v2)",
+            "type": "timeseries",
+            "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
+            "datasource": { "type": "prometheus", "uid": "${datasource}" },
+            "fieldConfig": {
+                "defaults": {
+                "color": { "mode": "palette-classic" },
+                "unit": "reqpm"
+                }
+            },
+            "targets": [
+                {
+                "expr": "sum(rate(sms_messages_classified_total{namespace=\"{{ .Values.namespace.name }}\", version=\"v1\"}[5m])) * 60",
+                "legendFormat": "Stable (v1)",
+                "refId": "A"
+                },
+                {
+                "expr": "sum(rate(sms_messages_classified_total{namespace=\"{{ .Values.namespace.name }}\", version=\"v2\"}[5m])) * 60",
+                "legendFormat": "Canary (v2)",
+                "refId": "B"
+                }
+            ]
+            },
+            {
+            "title": "Error Rate (%)",
+            "type": "timeseries",
+            "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+            "datasource": { "type": "prometheus", "uid": "${datasource}" },
+            "fieldConfig": {
+                "defaults": {
+                "color": { "mode": "thresholds" },
+                "unit": "percent",
+                "min": 0,
+                "max": 10
+                }
+            },
+            "targets": [
+                {
+                "expr": "100 * sum(rate(sms_messages_classified_total{namespace=\"{{ .Values.namespace.name }}\", version=\"v1\", result=\"error\"}[5m])) / sum(rate(sms_messages_classified_total{namespace=\"{{ .Values.namespace.name }}\", version=\"v1\"}[5m]))",
+                "legendFormat": "Stable Error %",
+                "refId": "A"
+                },
+                {
+                "expr": "100 * sum(rate(sms_messages_classified_total{namespace=\"{{ .Values.namespace.name }}\", version=\"v2\", result=\"error\"}[5m])) / sum(rate(sms_messages_classified_total{namespace=\"{{ .Values.namespace.name }}\", version=\"v2\"}[5m]))",
+                "legendFormat": "Canary Error %",
+                "refId": "B"
+                }
+            ]
+            },
+            {
+            "title": "Response Time p95 (s)",
+            "type": "bargauge",
+            "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+            "datasource": { "type": "prometheus", "uid": "${datasource}" },
+            "fieldConfig": {
+                "defaults": {
+                "color": { "mode": "thresholds" },
+                "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "yellow", "value": 0.5 },
+                    { "color": "red", "value": 1 }
+                    ]
+                },
+                "unit": "s",
+                "min": 0,
+                "max": 2
+                }
+            },
+            "targets": [
+                {
+                "expr": "histogram_quantile(0.95, sum(rate(sms_request_latency_seconds_bucket{namespace=\"{{ .Values.namespace.name }}\", version=\"v1\"}[5m])) by (le))",
+                "legendFormat": "Stable p95",
+                "refId": "A"
+                },
+                {
+                "expr": "histogram_quantile(0.95, sum(rate(sms_request_latency_seconds_bucket{namespace=\"{{ .Values.namespace.name }}\", version=\"v2\"}[5m])) by (le))",
+                "legendFormat": "Canary p95",
+                "refId": "B"
+                }
+            ]
+            },
+            {
+            "title": "Model Inference Latency Comparison",
+            "type": "timeseries",
+            "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+            "datasource": { "type": "prometheus", "uid": "${datasource}" },
+            "fieldConfig": {
+                "defaults": {
+                "color": { "mode": "palette-classic" },
+                "unit": "s"
+                }
+            },
+            "targets": [
+                {
+                "expr": "histogram_quantile(0.95, sum(rate(sms_model_inference_seconds_bucket{namespace=\"{{ .Values.namespace.name }}\", version=\"v1\"}[5m])) by (le))",
+                "legendFormat": "Stable Model p95",
+                "refId": "A"
+                },
+                {
+                "expr": "histogram_quantile(0.95, sum(rate(sms_model_inference_seconds_bucket{namespace=\"{{ .Values.namespace.name }}\", version=\"v2\"}[5m])) by (le))",
+                "legendFormat": "Canary Model p95",
+                "refId": "B"
+                }
+            ]
+            }
+        ],
+        "refresh": "5s",
+        "schemaVersion": 38,
+        "style": "dark",
+        "tags": ["sms-app", "experiment", "canary"],
+        "templating": {
+            "list": [
+            {
+                "current": { "selected": false, "text": "Prometheus", "value": "prometheus" },
+                "hide": 0,
+                "includeAll": false,
+                "name": "datasource",
+                "options": [],
+                "query": "prometheus",
+                "refresh": 1,
+                "type": "datasource"
+            }
+            ]
+        },
+        "time": { "from": "now-1h", "to": "now" },
+        "timepicker": {},
+        "timezone": "browser",
+        "uid": "sms-app-experiment",
+        "version": 1
+    }
+{{- end }}

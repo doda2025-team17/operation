@@ -40,6 +40,11 @@ spec:
                 secretKeyRef:
                   name: {{ include "sms-app.fullname" . }}-secrets
                   key: SMTP_PASSWORD
+            - name: DASHBOARD_VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "sms-app.fullname" . }}-config
+                  key: DASHBOARD_VERSION
           readinessProbe:
             httpGet:
               path: {{ .Values.app.readinessProbe.path }}

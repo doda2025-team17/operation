@@ -72,28 +72,4 @@ Vagrant.configure("2") do |config|
       end
     end
   end
-  
-  # Generate inventory.cfg file
-  config.trigger.after :provision do |trigger|
-    trigger.name = "Generate Ansible Inventory File"
-    trigger.info = "Creating inventory.cfg with all cluster nodes"
-    
-    inventory_content = <<~EOF
-[ctrl]
-ctrl ansible_host=192.168.56.100 ansible_user=vagrant
-
-[nodes]
-#{ (1..NUM_WORKERS).map { |i| "node-#{i} ansible_host=192.168.56.#{100 + i} ansible_user=vagrant" }.join("\n") }
-
-[k8s_cluster:children]
-ctrl
-nodes
-
-[all:vars]
-ansible_ssh_common_args='-o StrictHostKeyChecking=no'
-EOF
-    
-    File.write("inventory.cfg", inventory_content)
-    puts "Generated inventory.cfg with #{NUM_WORKERS} worker nodes"
-  end
 end

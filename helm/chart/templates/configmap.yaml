@@ -11,3 +11,4 @@ data:
   MODEL_HOST: "{{ .Values.config.modelHost | default (printf "http://%s:%v" (include "sms-app.model.name" .) .Values.modelService.service.port) }}"
   MODEL_SERVICE_PORT: "{{ .Values.config.modelServicePort | default (toString .Values.modelService.service.port) }}"
   MODEL_URL: "{{ .Values.config.modelUrl }}"
+  DASHBOARD_VERSION: "{{ .Values.config.dashboardVersion | default "v1" }}"
