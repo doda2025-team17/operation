@@ -13,6 +13,7 @@ config:
   modelHost: ""
   modelServicePort: ""
   modelUrl: "https://github.com/doda2025-team17/model-service/releases/download/v1.0.0/model-artifacts.tar.gz"
+  dashboardVersion: "v1"
 
 grafana:
   host: grafana.local
@@ -55,9 +56,7 @@ app:
     initialDelaySeconds: 15
     periodSeconds: 20
 
-# =============================================================================
 # Model Service Configuration
-# =============================================================================
 modelService:
   replicaCount: 1
   versionLabel: v1  # Version label for stable deployment
@@ -97,9 +96,7 @@ modelService:
     initialDelaySeconds: 15
     periodSeconds: 20
 
-# =============================================================================
-# Ingress Configuration (NGINX - disable when using Istio)
-# =============================================================================
+# Ingress Configuration
 ingress:
   enabled: true
   className: "nginx"
@@ -112,11 +109,9 @@ ingress:
           pathType: Prefix
   tls: []
 
-# =============================================================================
 # Istio Traffic Management
-# =============================================================================
 istio:
-  enabled: false  # Set to true to enable Istio routing (disable ingress.enabled)
+  enabled: false  # Set to true to enable Istio routing
   hosts:
     - sms-app.local
   
