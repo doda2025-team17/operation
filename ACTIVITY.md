@@ -114,6 +114,8 @@ No work.
 - reviewed other PRs
 
 ### Arnav
+- Attended all team meetings
+- Worked on the alerting task (PR [#44](https://github.com/doda2025-team17/operation/pull/44))
 
 ### Kristian
 - Attended all of the team meetings.
