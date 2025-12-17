@@ -24,12 +24,12 @@ app:
   
   # Canary deployment settings
   canary:
-    enabled: false  # Set to true for canary deployment
+    enabled: true  # Set to true for canary deployment
     replicaCount: 1
     versionLabel: v2  # Version label for canary deployment
     image:
       repository: ""  # Defaults to app.image.repository if empty
-      tag: ""         # Defaults to app.image.tag if empty
+      tag: v2         # Defaults to app.image.tag if empty
       pullPolicy: ""  # Defaults to app.image.pullPolicy if empty
     podAnnotations: {}
   
@@ -68,7 +68,7 @@ modelService:
     versionLabel: v2  # Version label for canary deployment
     image:
       repository: ""  # Defaults to modelService.image.repository if empty
-      tag: ""         # Defaults to modelService.image.tag if empty
+      tag: v2         # Defaults to modelService.image.tag if empty
       pullPolicy: ""  # Defaults to modelService.image.pullPolicy if empty
   
   image:
@@ -111,7 +111,7 @@ ingress:
 
 # Istio Traffic Management
 istio:
-  enabled: false  # Set to true to enable Istio routing
+  enabled: true  # Set to true to enable Istio routing
   hosts:
     - sms-app.local
   
