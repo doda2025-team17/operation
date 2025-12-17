@@ -117,6 +117,43 @@ helm upgrade --install sms-app helm/chart -n sms-app \
 kubectl label ns sms-app istio-injection=enabled --overwrite
 ```
 
+### With Istio Shadow Launch (model mirroring)
+
+Mirror a percentage of app requests to a shadow version of the model service (no user impact).
+
+```bash
+helm upgrade --install sms-app helm/chart -n sms-app --create-namespace \
+  --set secrets.smtpPassword=whatever \
+  --set istio.enabled=true \
+  --set modelService.shadow.enabled=true \
+  --set modelService.versionLabel=v1 \
+  --set modelService.image.tag=latest \
+  --set modelService.shadow.versionLabel=v2 \
+  --set modelService.shadow.image.tag=latest \
+  --set modelService.shadow.mirror.percent=25 \
+  --set "istio.hosts[0]=sms-istio.local"
+
+kubectl label ns sms-app istio-injection=enabled --overwrite
+```
+
+Test the mirror (example):
+```bash
+# Send from a meshed client to the model service DNS name (You can open a new terminal and go to "operation" root)
+export KUBECONFIG=vm/kubeconfig
+kubectl run curl-test --rm -it -n sms-app --image=curlimages/curl --restart=Never \
+  --labels="app.kubernetes.io/name=sms-app-app,version=v1" -- \
+  /bin/sh -c 'for i in $(seq 1 5); do
+    curl -s -X POST -H "Content-Type: application/json" \
+      -d "{\"sms\":\"test $i\"}" http://sms-app-model:8081/predict;
+    echo; sleep 1;
+  done'
+
+
+# Logs: both stable (v1) and shadow (v2) should show POST /predict
+kubectl logs -n sms-app -l app.kubernetes.io/name=sms-app-model,version=v1 --tail=5
+kubectl logs -n sms-app -l app.kubernetes.io/name=sms-app-model,version=v2 --tail=5
+```
+
 ## Uninstall
 
 ```bash
