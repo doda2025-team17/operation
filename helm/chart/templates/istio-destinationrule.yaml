@@ -24,4 +24,24 @@ spec:
     - name: {{ .Values.istio.canary.canarySubset }}
       labels:
         {{ .Values.istio.canary.subsetLabelKey }}: {{ .Values.istio.canary.canarySubset }}
+{{- if .Values.modelService.shadow.enabled }}
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: {{ include "sms-app.fullname" . }}-model-dr
+  namespace: {{ .Values.namespace.name | default .Release.Namespace }}
+  labels:
+    {{- include "sms-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: istio-destinationrule
+spec:
+  host: {{ include "sms-app.model.name" . }}
+  subsets:
+    - name: {{ .Values.modelService.versionLabel }}
+      labels:
+        {{ .Values.istio.modelRouting.subsetLabelKey }}: {{ .Values.modelService.versionLabel }}
+    - name: {{ .Values.modelService.shadow.versionLabel }}
+      labels:
+        {{ .Values.istio.modelRouting.subsetLabelKey }}: {{ .Values.modelService.shadow.versionLabel }}
+{{- end }}
 {{- end }}

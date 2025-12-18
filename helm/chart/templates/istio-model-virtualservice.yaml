@@ -1,0 +1,49 @@
+{{- if and .Values.istio.enabled .Values.modelService.shadow.enabled }}
+{{- $mirrorPercent := default 0 .Values.modelService.shadow.mirror.percent -}}
+{{- $namespace := default .Release.Namespace .Values.namespace.name -}}
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ include "sms-app.fullname" . }}-model-vs
+  namespace: {{ $namespace }}
+  labels:
+    {{- include "sms-app.labels" . | nindent 4 }}
+    app.kubernetes.io/component: istio-virtualservice
+spec:
+  hosts:
+    - {{ include "sms-app.model.name" . }}
+    - {{ include "sms-app.model.name" . }}.{{ $namespace }}.svc.cluster.local
+  gateways:
+    - mesh
+  http:
+    - name: model-stable
+      match:
+        - sourceLabels:
+            {{ .Values.istio.modelRouting.subsetLabelKey }}: {{ .Values.app.versionLabel | quote }}
+      route:
+        - destination:
+            host: {{ include "sms-app.model.name" . }}
+            subset: {{ .Values.modelService.versionLabel }}
+      {{- if and .Values.modelService.shadow.mirror.enabled (gt (float64 $mirrorPercent) 0.0) }}
+      mirror:
+        host: {{ include "sms-app.model.name" . }}
+        subset: {{ .Values.modelService.shadow.versionLabel }}
+      mirrorPercentage:
+        value: {{ $mirrorPercent }}
+      {{- end }}
+    {{- if .Values.app.canary.enabled }}
+    - name: model-canary
+      match:
+        - sourceLabels:
+            {{ .Values.istio.modelRouting.subsetLabelKey }}: {{ .Values.app.canary.versionLabel | quote }}
+      route:
+        - destination:
+            host: {{ include "sms-app.model.name" . }}
+            subset: {{ .Values.modelService.shadow.versionLabel }}
+    {{- end }}
+    - name: model-default
+      route:
+        - destination:
+            host: {{ include "sms-app.model.name" . }}
+            subset: {{ .Values.modelService.versionLabel }}
+{{- end }}

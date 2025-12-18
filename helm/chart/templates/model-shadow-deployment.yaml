@@ -1,31 +1,36 @@
+{{- if .Values.modelService.shadow.enabled }}
+{{- $shadowImageRepo := default .Values.modelService.image.repository .Values.modelService.shadow.image.repository -}}
+{{- $shadowImageTag := default .Values.modelService.image.tag .Values.modelService.shadow.image.tag -}}
+{{- $shadowImagePullPolicy := default .Values.modelService.image.pullPolicy .Values.modelService.shadow.image.pullPolicy -}}
+{{- $shadowResources := default .Values.modelService.resources .Values.modelService.shadow.resources -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "sms-app.model.name" . }}
+  name: {{ include "sms-app.model.shadow.name" . }}
   namespace: {{ .Values.namespace.name | default .Release.Namespace }}
   labels:
-    {{- include "sms-app.componentLabels" (dict "context" . "name" (include "sms-app.model.name" .) "component" "model") | nindent 4 }}
+    {{- include "sms-app.componentLabels" (dict "context" . "name" (include "sms-app.model.name" .) "component" "model-shadow") | nindent 4 }}
 spec:
-  replicas: {{ .Values.modelService.replicaCount }}
+  replicas: {{ .Values.modelService.shadow.replicaCount | default 1 }}
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "sms-app.model.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
-      version: {{ .Values.modelService.versionLabel | quote }}
+      version: {{ .Values.modelService.shadow.versionLabel | quote }}
   template:
     metadata:
       labels:
         {{- include "sms-app.componentLabels" (dict "context" . "name" (include "sms-app.model.name" .) "component" "model") | nindent 8 }}
-        version: {{ .Values.modelService.versionLabel | quote }}
-      {{- with .Values.modelService.podAnnotations }}
+        version: {{ .Values.modelService.shadow.versionLabel | quote }}
+      {{- with .Values.modelService.shadow.podAnnotations }}
       annotations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
     spec:
       containers:
         - name: model-service
-          image: "{{ .Values.modelService.image.repository }}:{{ .Values.modelService.image.tag }}"
-          imagePullPolicy: {{ .Values.modelService.image.pullPolicy }}
+          image: "{{ $shadowImageRepo }}:{{ $shadowImageTag }}"
+          imagePullPolicy: {{ $shadowImagePullPolicy }}
           ports:
             - containerPort: {{ .Values.modelService.containerPort }}
           env:
@@ -44,20 +49,6 @@ spec:
                 configMapKeyRef:
                   name: {{ include "sms-app.fullname" . }}-config
                   key: DASHBOARD_VERSION
-          {{- if .Values.modelService.readinessProbe.tcpSocket }}
-          readinessProbe:
-            tcpSocket:
-              port: {{ .Values.modelService.containerPort }}
-            initialDelaySeconds: {{ .Values.modelService.readinessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.modelService.readinessProbe.periodSeconds }}
-          {{- end }}
-          {{- if .Values.modelService.livenessProbe.tcpSocket }}
-          livenessProbe:
-            tcpSocket:
-              port: {{ .Values.modelService.containerPort }}
-            initialDelaySeconds: {{ .Values.modelService.livenessProbe.initialDelaySeconds }}
-            periodSeconds: {{ .Values.modelService.livenessProbe.periodSeconds }}
-          {{- end }}
           {{- if .Values.modelService.volume.enabled }}
           volumeMounts:
             - name: shared-models
@@ -85,6 +76,10 @@ spec:
             {{- end }}
             initialDelaySeconds: {{ .Values.modelService.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.modelService.livenessProbe.periodSeconds }}
+          {{- with $shadowResources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
       {{- if .Values.modelService.volume.enabled }}
       volumes:
         - name: shared-models
@@ -92,3 +87,4 @@ spec:
             path: {{ .Values.modelService.volume.hostPath }}
             type: DirectoryOrCreate
       {{- end }}
+{{- end }}

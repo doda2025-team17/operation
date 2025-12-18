@@ -38,6 +38,10 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- printf "%s-model" (include "sms-app.fullname" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
+{{- define "sms-app.model.shadow.name" -}}
+{{- printf "%s-model-shadow" (include "sms-app.fullname" .) | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
 {{- define "sms-app.componentLabels" -}}
 {{ include "sms-app.labels" .context }}
 app.kubernetes.io/name: {{ .name }}

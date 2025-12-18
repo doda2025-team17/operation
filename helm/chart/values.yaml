@@ -95,6 +95,19 @@ modelService:
     tcpSocket: true
     initialDelaySeconds: 15
     periodSeconds: 20
+  shadow:
+    enabled: false
+    replicaCount: 1
+    versionLabel: v2
+    image:
+      repository: ""
+      tag: ""
+      pullPolicy: ""
+    resources: {}
+    podAnnotations: {}
+    mirror:
+      enabled: true
+      percent: 10  
 
 # Ingress Configuration
 ingress:
@@ -135,6 +148,8 @@ istio:
       enabled: true
       name: sms-app-version
       ttl: 3600s
+  modelRouting:
+    subsetLabelKey: version    
 
 # Monitoring / Prometheus setup
 monitoring:
