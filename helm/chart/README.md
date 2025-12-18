@@ -122,6 +122,8 @@ kubectl label ns sms-app istio-injection=enabled --overwrite
 Mirror a percentage of app requests to a shadow version of the model service (no user impact).
 
 ```bash
+kubectl label ns sms-app istio-injection=disabled --overwrite #need to disable first
+
 helm upgrade --install sms-app helm/chart -n sms-app --create-namespace \
   --set secrets.smtpPassword=whatever \
   --set istio.enabled=true \
