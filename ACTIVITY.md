@@ -139,6 +139,8 @@ No work.
 ### Arnav
 
 ### Kristian
+- Implemented the additional use case: Shadow Launch, passing the "Sufficient" criteria (PR [#55](https://github.com/doda2025-team17/operation/pull/55)).
+- Reviewd a PR.
 
 ### Ana
 
