@@ -143,6 +143,8 @@ No work.
 - Reviewd a PR.
 
 ### Ana
+- Reviewed Traffic Management PR
+- Improved README document for helm and Traffic Management for excellent standard (PR [#49](https://github.com/doda2025-team17/operation/pull/49))
 
 ### Nicholas
 - Reviewed numerous PR's from the team.
