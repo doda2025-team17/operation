@@ -21,15 +21,20 @@ Afterwards, they must complete the multi-stage Helm deployment process: first, i
 
 ### 1.2. The Release Engineering Problem
 
-The workflow described in ![Section 1.1](#11-current-state) is highly fragmented and inconvenient. It represents, essentially, a problem regarding coordination and automation, where the separation of concerns that was so useful for developing the three repositories becomes a liability during the actual deployment of the application due to the absense of an integrated release mechanism. This places an excessive cognitive and operational burden on the developer and introduces unnecessary opportunities for human error. 
+The workflow described in ![Section 1.1](#11-current-state) is highly fragmented and inconvenient. It represents, essentially, a problem regarding coordination and automation, where the separation of concerns that was so useful for developing the three repositories becomes a liability during the actual deployment of the application due to the absense of an integrated release mechanism. This places an excessive cognitive and operational burden on the developer and introduces opportunities for human error.
 
 Furthermore, this can be categorized as a release engineering problem. In Google's Site Reliability Engineering (SRE) model, release engineering is concerned with designing automated, reproducibile, and auditable release processes that minimize manual intervention and operational toil (Beyer et al., 2016). The current workflow violates these principles in several ways.
 
-Firstly, 
+Firstly, versioning and propagating images across repositories is a manual process prone to human errors. Developers must independently build and push the `app` and `model-service` images, then update the `values.yaml` in the `operation` repository before running Helm commands. This manual step has a high risk of accidentally mismatching the versions of the cluster and the source repositories, which reduces reliability and increases the so-called "operational toil".
+
+Secondly, orchestrating the deployment of the application is a fragmented process across repositories. Helm releases, secret management, and Istio configuration all require sequential manual actions. There is no central, automated control plane for coordinating these steps, which increases the "cognitive load" of the developer (Sweller, 1988) and slows down the release process. Each manual intervention is a potential point of failure and contradicts the SRE principle of minimizing operational toil through automation (Beyer et al., 2016).
+
+Thirdly, the workflow does not provide adequate reproducibility. The DORA research program identifies "change lead time" as an important metric for DevOps performance, requiring clear tracking of when changes move from code to production (DORA, 2024). However, our process lacks this traceability. Currently, it is difficult to determine which versions of `app` and `model-service` are running in a given environment solely from the repository history. Rollbacks or reproducing experiments require a thorough manual inspection and for the tester to coordinate across multiple repositories, which makes the process non-reproducible and audit-unfriendly.
 
 
 ### 1.3. Negative Impacts
 
+The release engineering process in this project has tangible negative impacts. 
 
 ## 2. Proposed Extension: Cross-Repository CI/CD Pipeline
 
@@ -76,6 +81,11 @@ Firstly,
 
 
 ## 6. References
+Beyer, B., Jones, C., Petoff, J., & Murphy, N. R. (Eds.). (2016). *Site Reliability Engineering: How Google Runs Production Systems*. O’Reilly Media.
+
+DORA Research Program (2024). *Accelerate State of DevOps*. Google Cloud. Retrieved from [https://dora.dev/research/2024/dora-report/2024-dora-accelerate-state-of-devops-report.pdf](https://dora.dev/research/2024/dora-report/2024-dora-accelerate-state-of-devops-report.pdf).
+
+Sweller, J. (1988). Cognitive load during problem solving: Effects on learning. Cognitive Science, 12(2), 257–285. [https://doi.org/10.1207/s15516709cog1202_4](https://doi.org/10.1207/s15516709cog1202_4).
 
 
 ## 7. Declarative Use of Generative AI
