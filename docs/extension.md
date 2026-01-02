@@ -29,7 +29,7 @@ Firstly, versioning and propagating images across repositories is a manual proce
 
 Secondly, orchestrating the deployment of the application is a fragmented process across repositories. Helm releases, secret management, and Istio configuration all require sequential manual actions. There is no central, automated control plane for coordinating these steps, which increases the "cognitive load" of the developer (Sweller, 1988) and slows down the release process. Each manual intervention is a potential point of failure and contradicts the SRE principle of minimizing operational toil through automation (Beyer et al., 2016).
 
-Finally, the workflow does not provide adequate reproducibility. The DORA research program identifies "change lead time" as an important metric for DevOps performance, requiring clear tracking of when changes move from code to production (DORA, 2024). However, our process lacks this traceability. Currently, it is difficult to determine which versions of `app` and `model-service` are running in a given environment solely from the repository history. Rollbacks or reproducing experiments require a thorough manual inspection and for the tester to coordinate across multiple repositories, which makes the process non-reproducible and audit-unfriendly.
+Finally, the workflow does not provide adequate reproducibility, nor traceability. The DORA research program identifies "change lead time" as an important metric for DevOps performance, requiring clear tracking of when changes move from code to production (DORA, 2024). However, our process lacks the traceability to measure this metric and the reproducibility to validate it. Currently, it is difficult to determine which versions of `app` and `model-service` are running in a given environment solely from the repository history - there is no single source of truth, a fundamental GitOps principle (OpenGitOps, n.d.). This deficiency makes rollbacks unreliable and reproducing an experiment impossible, as recreating a specific deployment state (such as "experiment X with `app v1.2.3`, `model-service v2.0.1`, and 90/10 canary routing") requires manual - and often literal - detective work on the tester's side, along with coordination across repositories. This violates the release engineering principle that deployments should be both reproducible (exactly recreatable) and auditable (clearly traceable).
 
 What we have identified is fundamentally a release engineering problem because it affects the systematic building and deploying of software. The issues extend beyond our project to a general pattern in multi-repository microservices architectures, making the solution we will present broadly applicable.
 
@@ -91,6 +91,8 @@ Finally, the process creates bottlenecks that make parallel development difficul
 Beyer, B., Jones, C., Petoff, J., & Murphy, N. R. (Eds.). (2016). *Site Reliability Engineering: How Google Runs Production Systems*. O’Reilly Media.
 
 DORA Research Program (2024). *Accelerate State of DevOps*. Google Cloud. Retrieved from [https://dora.dev/research/2024/dora-report/2024-dora-accelerate-state-of-devops-report.pdf](https://dora.dev/research/2024/dora-report/2024-dora-accelerate-state-of-devops-report.pdf).
+
+OpenGitOps. (n.d.). OpenGitOps. https://opengitops.dev/
 
 Sweller, J. (1988). Cognitive load during problem solving: Effects on learning. Cognitive Science, 12(2), 257–285. [https://doi.org/10.1207/s15516709cog1202_4](https://doi.org/10.1207/s15516709cog1202_4).
 
