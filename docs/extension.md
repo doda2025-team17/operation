@@ -4,7 +4,29 @@
 
 ### 1.1. Current state
 
+The project is divided intro three independent repositories, each serving a distinct purpose. The `app` repository contains the Spring Boot web application that serves as the frontend and API gateway, whereas the `model-service` repository contains the spam detection application itself. Finally, the `operation` repository acts as the deployment hub, containing all infrastructure-as-code components, such as the Vagrant/Ansible provisioning scripts, Helm charts for Kubernetes deployment, Istio configuration files, and Prometheus monitoring setup. For the purposes of this report, we shall ignore the `lib-version` repository.
+
+<figure>
+  <img src="images/extension/Current%20Workflow.png" alt="Current State Deployment Workflow">
+  <figcaption><b>Figure 1:</b> Current State Deployment Workflow.</figcaption>
+</figure>
+
+The current workflow is a mostly manual process, illustrated in **Figure 1**. First, a developer makes a change in the codebase. Then, they manually build the `app` and `model-service` repositories, and they push the resulting images to the GitHub Container Registry (GHCR). 
+
+This manual image building and pushing process follows our established versioning conventions: for stable releases, images are tagged with semantic versions like `v1.0.1`, while for feature branches, we use pre-release tags such as `v1.2.3-feature-x-20251217-123456`. However, there is no automated mechanism to propagate these version tags to the `operation` repository. Instead, a developer must manually navigate to the Helm chart's `values.yaml` file, update both the `app.image.tag` and `modelService.image.tag` fields with the exact versions that have just been pushed to GHCR, commit this change, and then execute `helm upgrade --install` commands against the Kubernetes cluster.
+
+Before any deployment can occur, the infrastructure must be provisioned. A user must manually start the Virtual Machines via `vagrant up`, which triggers the Ansible playbooks to automatically provision the full Kubernetes cluster stack, including the Flannel CNI, MetalLB load balancer, NGINX Ingress Controller, and Istio service mesh. Once provisioned, the user must export the `KUBECONFIG` environment variable pointing to the generated configuration file and manually build Helm dependencies with `helm dependency build`. 
+
+Afterwards, they must complete the multi-stage Helm deployment process: first, install a basic release, then manually create the Kubernetes Secrets (such as SMTP credentials), and finally upgrade the release with additional configurations for monitoring, alerting, or Istio features. In the end, the end user must manually set up port forwarding via `kubectl port-forward` before the application becomes accessible at `http://localhost:8080`.
+
 ### 1.2. The Release Engineering Problem
+
+The workflow described in ![Section 1.1](#11-current-state) is highly fragmented and inconvenient. It represents, essentially, a problem regarding coordination and automation, where the separation of concerns that was so useful for developing the three repositories becomes a liability during the actual deployment of the application due to the absense of an integrated release mechanism. This places an excessive cognitive and operational burden on the developer and introduces unnecessary opportunities for human error. 
+
+Furthermore, this can be categorized as a release engineering problem. In Google's Site Reliability Engineering (SRE) model, release engineering is concerned with designing automated, reproducibile, and auditable release processes that minimize manual intervention and operational toil (Beyer et al., 2016). The current workflow violates these principles in several ways.
+
+Firstly, 
+
 
 ### 1.3. Negative Impacts
 
@@ -56,4 +78,13 @@
 ## 6. References
 
 
-## 7. Use of Generative AI
+## 7. Declarative Use of Generative AI
+Chatbots (ChatGPT and Claude) were used to rephrase text and improve style, structure, and grammar. They were not used to generate new content, but rather to improve the overall clarity, consistency, and readability of the report. Additionally to LLMs, Grammarly has been used to correct any grammar mistakes.
+
+Examples of prompts used:
+
+- (ChatGPT) “How can this sentence be rephrased to sound more stylistically correct?”
+
+- (ChatGPT) “Please correct the grammar and improve the flow of this paragraph.”
+
+- (Claude) “Make this explanation more concise without changing its meaning.”
