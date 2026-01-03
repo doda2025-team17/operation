@@ -21,7 +21,7 @@ Afterwards, they must complete the multi-stage Helm deployment process: first, i
 
 ### 1.2. The Release Engineering Problem
 
-The workflow described in ![Section 1.1](#11-current-state) is highly fragmented and inconvenient. It represents, essentially, a problem regarding coordination and automation, where the separation of concerns that was so useful for developing the three repositories becomes a liability during the actual deployment of the application due to the absence of an integrated release mechanism. This places an excessive cognitive and operational burden on the developer and introduces opportunities for human error.
+The workflow described in [Section 1.1](#11-current-state) is highly fragmented and inconvenient. It represents, essentially, a problem regarding coordination and automation, where the separation of concerns that was so useful for developing the three repositories becomes a liability during the actual deployment of the application due to the absence of an integrated release mechanism. This places an excessive cognitive and operational burden on the developer and introduces opportunities for human error.
 
 Furthermore, this can be categorized as a release engineering problem. In Google's Site Reliability Engineering (SRE) model, release engineering is concerned with designing automated, reproducibile, and auditable release processes that minimize manual intervention and operational toil (Beyer et al., 2016). The current workflow violates these principles in several ways.
 
@@ -31,7 +31,7 @@ Secondly, orchestrating the deployment of the application is a fragmented proces
 
 Finally, the workflow does not provide adequate reproducibility, nor traceability. The DORA research program identifies "change lead time" as an important metric for DevOps performance, requiring clear tracking of when changes move from code to production (DORA, 2024). However, our process lacks the traceability to measure this metric and the reproducibility to validate it. Currently, it is difficult to determine which versions of `app` and `model-service` are running in a given environment solely from the repository history - there is no single source of truth, a fundamental GitOps principle (OpenGitOps, n.d.). This deficiency makes rollbacks unreliable and reproducing an experiment impossible, as recreating a specific deployment state (such as "experiment X with `app v1.2.3`, `model-service v2.0.1`, and 90/10 canary routing") requires manual - and often literal - detective work on the tester's side, along with coordination across repositories. This violates the release engineering principle that deployments should be both reproducible (exactly recreatable) and auditable (clearly traceable).
 
-What we have identified is fundamentally a release engineering problem because it affects the systematic building and deploying of software. The issues extend beyond our project to a general pattern in multi-repository microservices architectures, making the solution we will present broadly applicable.
+What we have identified is fundamentally a release engineering problem because it affects the systematic building and deploying of software. The issues extend beyond our project to a general pattern in multi-repository microservice architectures, making the solution we will present broadly applicable.
 
 
 ### 1.3. Negative Impacts
@@ -46,6 +46,21 @@ Finally, the process creates bottlenecks that make parallel development difficul
 ## 2. Proposed Extension: Cross-Repository CI/CD Pipeline
 
 ### 2.1. Vision
+
+Our vision is to develop a unified release engineering framework that transforms the current manual workflow into an automated one. We are inspired by the GitOps principles of "declarative, versioned, and automated infrastructure management" (OpenGitOps, n.d.), and we imagine an extension where:
+
+1. Development and deployment are properly separated. That is, feature development is exclusively done in the `app` and `model-service` repositories, while release engineering concerns are centralized and automated through the operation repository.
+
+2. The `operation` repository becomes the authoritative single source of truth for all deployment states, containing infrastructure definitions, as well as explicit declarations of which software versions should run where, when, and under what conditions. This repository would serve as the definitive record of deployment history, experiment configurations, and environment states.
+
+3. Release processes become automated, reproducible, and auditable, eliminating the manual steps identified in [Section 1.1](#11-current-state).
+
+4. Continuous experimentation becomes a versioned process where experiment configurations are treated as declarative artifacts rather than ad-hoc manual adjustments. Experiments would be reproducible, comparable, and directly traceable to specific code versions and deployment states.
+
+5. The entire system achieves deterministic traceability from code commit to running workload, which would enable precise measurement of DORA metrics like "change lead time" (DORA, 2024) and provide clear audit trails for security requirements.
+
+Ultimately, we want our extension to go beyond our specific project to address a common release engineering pattern in microservices architectures, namely how to coordinate the deployment of independent services. We wish to design a model applicable to any team facing similar challenges across service boundaries.
+
 
 ### 2.2. High-Level Design
 
@@ -92,9 +107,9 @@ Beyer, B., Jones, C., Petoff, J., & Murphy, N. R. (Eds.). (2016). *Site Reliabil
 
 DORA Research Program (2024). *Accelerate State of DevOps*. Google Cloud. Retrieved from [https://dora.dev/research/2024/dora-report/2024-dora-accelerate-state-of-devops-report.pdf](https://dora.dev/research/2024/dora-report/2024-dora-accelerate-state-of-devops-report.pdf).
 
-OpenGitOps. (n.d.). OpenGitOps. https://opengitops.dev/
+OpenGitOps. (n.d.). *OpenGitOps*. https://opengitops.dev/
 
-Sweller, J. (1988). Cognitive load during problem solving: Effects on learning. Cognitive Science, 12(2), 257–285. [https://doi.org/10.1207/s15516709cog1202_4](https://doi.org/10.1207/s15516709cog1202_4).
+Sweller, J. (1988). *Cognitive load during problem solving: Effects on learning.* Cognitive Science, 12(2), 257–285. [https://doi.org/10.1207/s15516709cog1202_4](https://doi.org/10.1207/s15516709cog1202_4).
 
 
 ## 7. Declarative Use of Generative AI
