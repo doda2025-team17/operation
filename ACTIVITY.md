@@ -135,6 +135,8 @@ No work.
 ## Week Q4.6 (Dec. 15 - 21)
 
 ### Rebecca
+- Added a second Grafana Dashboard to fulfill the "Excellent" requirement for A3 and to help setup the Continuous Experimentation part of A4 in PR [#53](https://github.com/doda2025-team17/operation/pull/53).
+- Reviewed Additional Use Case PR.
 
 ### Arnav
 
