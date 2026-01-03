@@ -83,6 +83,16 @@ The architecture we have presented is a generalizable pattern for multi-reposito
 
 ### 2.3. How it Addresses the Shortcoming
 
+The proposed architecture directly addresses each negative impact identified in [Section 1.3](#13-negative-impacts) through three improvements:
+
+First, it creates an automatic and reliable way of tracking what is deployed where. In the current setup, determining which versions are running requires checking multiple locations and takes a not insignificant amount of time. Our proposed solution makes the `operation` repository the single source of truth, with every deployment recorded in Git history, preventing drift (Totin, 2025) between the deployed and specified versions. This provides an immediate answer to the question "what's running?" and therefore helps solve the reproducibility issue noted in [Section 1.2](#12-the-release-engineering-problem).
+
+Second, it removes the coordination bottlenecks that slow down working in parallel. Currently, developers must manually synchronize their work across repositories, which creates delays. The event-driven solution allows developers to work in parallel: they can independently build and test their changes, while the deployment control plane automatically detects compatible versions and orchestrates coordinated releases. This eliminates the sequential blocking tasks described in [Section 1.3](#13-negative-impacts) and enables true independent development.
+
+Third, it builds security directly into the deployment pipeline. In the current setup, managing secrets and configurations requires manually executing `kubectl` commands, which are prone to human error. Our proposed solution automates this by validating the security practices as a standard step in the pipeline, thereby addressing the security risks identified in [Section 1.3](#13-negative-impacts) while adhering to Google SRE’s principle of eliminating manual toil through automation (Beyer et al., 2016).
+
+Additionally, the solution introduces scientific experiment management for Assignment 4's requirements. Where current experiments might suffer from reproducibility problems due to the manual setup required, the extension would treat experiment configurations as versioned artifacts with clear links to specific code versions and results. This makes it so that experiments can be precisely recreated and analyzed.
+
 
 ## 3. Implementation Plan
 
@@ -120,14 +130,15 @@ The architecture we have presented is a generalizable pattern for multi-reposito
 
 
 ## 6. References
-Beyer, B., Jones, C., Petoff, J., & Murphy, N. R. (Eds.). (2016). *Site Reliability Engineering: How Google Runs Production Systems*. O’Reilly Media.
+Beyer, B., Jones, C., Petoff, J., & Murphy, N. R. (Eds.). (2016). *Site Reliability Engineering: How Google Runs Production Systems*. O’Reilly Media. Retrieved from [https://sre.google/sre-book/table-of-contents/](https://sre.google/sre-book/table-of-contents/).
 
 DORA Research Program (2024). *Accelerate State of DevOps*. Google Cloud. Retrieved from [https://dora.dev/research/2024/dora-report/2024-dora-accelerate-state-of-devops-report.pdf](https://dora.dev/research/2024/dora-report/2024-dora-accelerate-state-of-devops-report.pdf).
 
 OpenGitOps. (n.d.). *OpenGitOps*. https://opengitops.dev/
 
-Sweller, J. (1988). *Cognitive load during problem solving: Effects on learning.* Cognitive Science, 12(2), 257–285. [https://doi.org/10.1207/s15516709cog1202_4](https://doi.org/10.1207/s15516709cog1202_4).
+Sweller, John. (1988). *Cognitive load during problem solving: Effects on learning.* Cognitive Science, 12(2), 257–285. [https://doi.org/10.1207/s15516709cog1202_4](https://doi.org/10.1207/s15516709cog1202_4).
 
+Totin, Alexey. (2025). *Configuration Drift: The Pitfall of Local Machines*. JetBrains Blog. Retrieved from [https://blog.jetbrains.com/codecanvas/2025/08/configuration-drift-the-pitfall-of-local-machines/](https://blog.jetbrains.com/codecanvas/2025/08/configuration-drift-the-pitfall-of-local-machines/).
 
 ## 7. Declarative Use of Generative AI
 Chatbots (ChatGPT and Claude) were used to rephrase text and improve style, structure, and grammar. They were not used to generate new content, but rather to improve the overall clarity, consistency, and readability of the report. Additionally to LLMs, Grammarly has been used to correct any grammar mistakes.
