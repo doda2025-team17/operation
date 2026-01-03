@@ -51,7 +51,7 @@ Our vision is to develop a unified release engineering framework that transforms
 
 1. Development and deployment are properly separated. That is, feature development is exclusively done in the `app` and `model-service` repositories, while release engineering concerns are centralized and automated through the operation repository.
 
-2. The `operation` repository becomes the authoritative single source of truth for all deployment states, containing infrastructure definitions, as well as explicit declarations of which software versions should run where, when, and under what conditions. This repository would serve as the definitive record of deployment history, experiment configurations, and environment states.
+2. The `operation` repository becomes the authoritative single source of truth for all deployment states, containing infrastructure definitions, but also explicit declarations of which software versions should run where, when, and under what conditions. This repository would serve as the definitive record of deployment history, experiment configurations, and environment states.
 
 3. Release processes become automated, reproducible, and auditable, eliminating the manual steps identified in [Section 1.1](#11-current-state).
 
@@ -63,6 +63,23 @@ Ultimately, we want our extension to go beyond our specific project to address a
 
 
 ### 2.2. High-Level Design
+
+The proposed extension introduces a centralized, declarative release architecture that restructures the current workflow around a single deployment control plane. The design establishes the `operation` repository as the deployment control plane, with the `app` and `model-service` repositories serving as specialized artifact producers. This architecture follows the GitOps principle of having a "single source of truth" for deployment state (OpenGitOps, n.d.), while still maintaining a clear separation of concerns.
+
+At the core of the design, the `operation` repository becomes the authoritative source of truth for the deployment state. This means that rather than developers having to manually coordinate releases across repositories, `operation` declaratively specifies which versions of `app` and `model-service` should run in each environment. Furthermore, the `app` and `model-service` repositories are conceptually reframed as **artifact producers**. Their responsibility ends at producing versioned, immutable build artifacts. Then, once the artifacts are published, deployment is influenced exclusively by the changes to the declarative state in the `operation` repository.
+
+<figure>
+  <img src="images/extension/High-Level Design.png" alt="High-Level Design">
+  <figcaption><b>Figure 2:</b> High-Level Conceptual Design of the Release Pipeline.</figcaption>
+</figure>
+
+**Figure 2** illustrates the proposed architecture, which we have divided into three separate layers:
+1. **Artifact Production Layer** (`app` and `model-service`). These repositories automatically build and publish versioned Docker images to GHCR when code changes are committed. Each maintains independent CI pipelines and publishes a notification when the artifacts are ready. 
+2. **Deployment Control Plane** (`operation`). This central repository contains declarative environment configurations that specify exactly which artifact versions should run in each environment (staging, production, experiment). It serves as the single source of truth for deployment state, and can be configured by the user if desired.
+3. **Reconciliation Layer**. Automated workflows constantly check if the required artifacts are available, then synchronize the declared state with the running Kubernetes cluster using Helm and Istio. Any change to the declared state is traceable, reversible, and auditable.
+
+The architecture we have presented is a generalizable pattern for multi-repository microservices deployments. It scales horizontally as new services are added, with each new repository following the same artifact-producer interface. As a result, any organization with separate repositories for different services can adopt this model to coordinate releases.
+
 
 ### 2.3. How it Addresses the Shortcoming
 
