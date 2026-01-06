@@ -4,7 +4,7 @@
 
 ### 1.1. Current state
 
-The project is divided intro three independent repositories, each serving a distinct purpose. The `app` repository contains the Spring Boot web application that serves as the frontend and API gateway, whereas the `model-service` repository contains the spam detection application itself. Finally, the `operation` repository acts as the deployment hub, containing all infrastructure-as-code components, such as the Vagrant/Ansible provisioning scripts, Helm charts for Kubernetes deployment, Istio configuration files, and Prometheus monitoring setup. For the purposes of this report, we shall ignore the `lib-version` repository.
+The project is divided into three independent repositories, each serving a distinct purpose. The `app` repository contains the Spring Boot web application that serves as the frontend and API gateway, whereas the `model-service` repository contains the spam detection application itself. Finally, the `operation` repository acts as the deployment hub, containing all infrastructure-as-code components, such as the Vagrant/Ansible provisioning scripts, Helm charts for Kubernetes deployment, Istio configuration files, and Prometheus monitoring setup. For the purposes of this report, we shall ignore the `lib-version` repository.
 
 <figure>
   <img src="images/extension/Current%20Workflow.png" alt="Current State Deployment Workflow">
@@ -23,13 +23,13 @@ Afterwards, they must complete the multi-stage Helm deployment process: first, i
 
 The workflow described in [Section 1.1](#11-current-state) is highly fragmented and inconvenient. It represents, essentially, a problem regarding coordination and automation, where the separation of concerns that was so useful for developing the three repositories becomes a liability during the actual deployment of the application due to the absence of an integrated release mechanism. This places an excessive cognitive and operational burden on the developer and introduces opportunities for human error.
 
-Furthermore, this can be categorized as a release engineering problem. In Google's Site Reliability Engineering (SRE) model, release engineering is concerned with designing automated, reproducibile, and auditable release processes that minimize manual intervention and operational toil (Beyer et al., 2016). The current workflow violates these principles in several ways.
+Furthermore, this can be categorized as a release engineering problem. In Google's Site Reliability Engineering (SRE) model, release engineering is concerned with designing automated, reproducibile, and auditable release processes that minimize manual intervention and operational toil [1]. The current workflow violates these principles in several ways.
 
-Firstly, versioning and propagating images across repositories is a manual process prone to human errors. Developers must independently build and push the `app` and `model-service` images, then update the `values.yaml` in the `operation` repository before running Helm commands. This manual step has a high risk of accidentally mismatching the versions of the cluster and the source repositories, which reduces reliability and increases the so-called "operational toil", defined in Google's SRE model as manual, repetitive work that scales linearly with system growth (Beyer et al., 2016).
+Firstly, versioning and propagating images across repositories is a manual process prone to human errors. Developers must independently build and push the `app` and `model-service` images, then update the `values.yaml` in the `operation` repository before running Helm commands. This step has a high risk of accidentally mismatching the versions of the cluster and the source repositories, which reduces reliability and increases the so-called "operational toil", defined in Google's SRE model as manual, repetitive work that scales linearly with system growth [1].
 
-Secondly, orchestrating the deployment of the application is a fragmented process across repositories. Helm releases, secret management, and Istio configuration all require sequential manual actions. There is no central, automated control plane for coordinating these steps, which increases the "cognitive load" of the developer (Sweller, 1988) and slows down the release process. Each manual intervention is a potential point of failure and contradicts the SRE principle of minimizing operational toil through automation (Beyer et al., 2016).
+Secondly, orchestrating the deployment of the application is a fragmented process across repositories. Helm releases, secret management, and Istio configuration all require sequential manual actions. There is no central, automated control plane for coordinating these steps, which increases the "cognitive load" of the developer [2] and slows down the release process. Each manual intervention is a potential point of failure and contradicts the SRE principle of minimizing operational toil through automation [1].
 
-Finally, the workflow does not provide adequate reproducibility, nor traceability. The DORA research program identifies "change lead time" as an important metric for DevOps performance, requiring clear tracking of when changes move from code to production (DORA, 2024). However, our process lacks the traceability to measure this metric and the reproducibility to validate it. Currently, it is difficult to determine which versions of `app` and `model-service` are running in a given environment solely from the repository history - there is no single source of truth, a fundamental GitOps principle (OpenGitOps, n.d.). This deficiency makes rollbacks unreliable and reproducing an experiment impossible, as recreating a specific deployment state (such as "experiment X with `app v1.2.3`, `model-service v2.0.1`, and 90/10 canary routing") requires manual - and often literal - detective work on the tester's side, along with coordination across repositories. This violates the release engineering principle that deployments should be both reproducible (exactly recreatable) and auditable (clearly traceable).
+Finally, the workflow does not provide adequate reproducibility, nor traceability. The DORA research program identifies "change lead time" as an important metric for DevOps performance, requiring clear tracking of when changes move from code to production [3]. However, our process lacks the traceability to measure this metric and the reproducibility to validate it. Currently, it is difficult to determine which versions of `app` and `model-service` are running in a given environment solely from the repository history - there is no single source of truth, a fundamental GitOps principle [4]. This deficiency makes rollbacks unreliable and reproducing an experiment impossible, as recreating a specific deployment state (such as "experiment X with `app v1.2.3`, `model-service v2.0.1`, and 90/10 canary routing") requires manual - and often literal - detective work on the tester's side, along with coordination across repositories. This violates the release engineering principle that deployments should be both reproducible (exactly recreatable) and auditable (clearly traceable).
 
 What we have identified is fundamentally a release engineering problem because it affects the systematic building and deploying of software. The issues extend beyond our project to a general pattern in multi-repository microservice architectures, making the solution we will present broadly applicable.
 
@@ -47,9 +47,9 @@ Finally, the process creates bottlenecks that make parallel development difficul
 
 ### 2.1. Vision
 
-Our vision is to develop a unified release engineering framework that transforms the current manual workflow into an automated one. We are inspired by the GitOps principles of "declarative, versioned, and automated infrastructure management" (OpenGitOps, n.d.), and we imagine an extension where:
+Our vision is to develop a unified release engineering framework that transforms the current manual workflow into an automated one. We are inspired by the GitOps principles of "declarative, versioned, and automated infrastructure management" [4], and we imagine an extension where:
 
-1. Development and deployment are properly separated. That is, feature development is exclusively done in the `app` and `model-service` repositories, while release engineering concerns are centralized and automated through the operation repository.
+1. Development and deployment are properly separated. That is, feature development is exclusively done in the `app` and `model-service` repositories, while release engineering concerns are centralized and automated through the `operation` repository.
 
 2. The `operation` repository becomes the authoritative single source of truth for all deployment states, containing infrastructure definitions, but also explicit declarations of which software versions should run where, when, and under what conditions. This repository would serve as the definitive record of deployment history, experiment configurations, and environment states.
 
@@ -57,14 +57,14 @@ Our vision is to develop a unified release engineering framework that transforms
 
 4. Continuous experimentation becomes a versioned process where experiment configurations are treated as declarative artifacts rather than ad-hoc manual adjustments. Experiments would be reproducible, comparable, and directly traceable to specific code versions and deployment states.
 
-5. The entire system achieves deterministic traceability from code commit to running workload, which would enable precise measurement of DORA metrics like "change lead time" (DORA, 2024) and provide clear audit trails for security requirements.
+5. The entire system achieves deterministic traceability from code commit to running workload, which would enable precise measurement of DORA metrics like "change lead time" [3] and provide clear audit trails for security requirements.
 
 Ultimately, we want our extension to go beyond our specific project to address a common release engineering pattern in microservices architectures, namely how to coordinate the deployment of independent services. We wish to design a model applicable to any team facing similar challenges across service boundaries.
 
 
 ### 2.2. High-Level Design
 
-The proposed extension introduces a centralized, declarative release architecture that restructures the current workflow around a single deployment control plane. The design establishes the `operation` repository as the deployment control plane, with the `app` and `model-service` repositories serving as specialized artifact producers. This architecture follows the GitOps principle of having a "single source of truth" for deployment state (OpenGitOps, n.d.), while still maintaining a clear separation of concerns.
+The proposed extension introduces a centralized, declarative release architecture that restructures the current workflow around a single deployment control plane. The design establishes the `operation` repository as the deployment control plane, with the `app` and `model-service` repositories serving as specialized artifact producers. This architecture follows the GitOps principle of having a "single source of truth" for deployment state [4], while still maintaining a clear separation of concerns.
 
 At the core of the design, the `operation` repository becomes the authoritative source of truth for the deployment state. This means that rather than developers having to manually coordinate releases across repositories, `operation` declaratively specifies which versions of `app` and `model-service` should run in each environment. Furthermore, the `app` and `model-service` repositories are conceptually reframed as **artifact producers**. Their responsibility ends at producing versioned, immutable build artifacts. Then, once the artifacts are published, deployment is influenced exclusively by the changes to the declarative state in the `operation` repository.
 
@@ -85,11 +85,11 @@ The architecture we have presented is a generalizable pattern for multi-reposito
 
 The proposed architecture directly addresses each negative impact identified in [Section 1.3](#13-negative-impacts) through three improvements:
 
-First, it creates an automatic and reliable way of tracking what is deployed where. In the current setup, determining which versions are running requires checking multiple locations and takes a not insignificant amount of time. Our proposed solution makes the `operation` repository the single source of truth, with every deployment recorded in Git history, preventing drift (Totin, 2025) between the deployed and specified versions. This provides an immediate answer to the question "what's running?" and therefore helps solve the reproducibility issue noted in [Section 1.2](#12-the-release-engineering-problem).
+First, it creates an automatic and reliable way of tracking what is deployed where. In the current setup, determining which versions are running requires checking multiple locations and takes a significant amount of time. Our proposed solution makes the `operation` repository the single source of truth, with every deployment recorded in Git history, preventing drift [5] between the deployed and specified versions. This provides an immediate answer to the question "what's running?" and therefore helps solve the reproducibility issue noted in [Section 1.2](#12-the-release-engineering-problem).
 
 Second, it removes the coordination bottlenecks that slow down working in parallel. Currently, developers must manually synchronize their work across repositories, which creates delays. The event-driven solution allows developers to work in parallel: they can independently build and test their changes, while the deployment control plane automatically detects compatible versions and orchestrates coordinated releases. This eliminates the sequential blocking tasks described in [Section 1.3](#13-negative-impacts) and enables true independent development.
 
-Third, it builds security directly into the deployment pipeline. In the current setup, managing secrets and configurations requires manually executing `kubectl` commands, which are prone to human error. Our proposed solution automates this by validating the security practices as a standard step in the pipeline, thereby addressing the security risks identified in [Section 1.3](#13-negative-impacts) while adhering to Google SRE’s principle of eliminating manual toil through automation (Beyer et al., 2016).
+Third, it builds security directly into the deployment pipeline. In the current setup, managing secrets and configurations requires manually executing `kubectl` commands, which are prone to human error. Our proposed solution automates this by validating the security practices as a standard step in the pipeline, thereby addressing the security risks identified in [Section 1.3](#13-negative-impacts) while adhering to Google SRE’s principle of eliminating manual toil through automation [1].
 
 Additionally, the solution introduces scientific experiment management for Assignment 4's requirements. Where current experiments might suffer from reproducibility problems due to the manual setup required, the extension would treat experiment configurations as versioned artifacts with clear links to specific code versions and results. This makes it so that experiments can be precisely recreated and analyzed.
 
@@ -130,15 +130,16 @@ Additionally, the solution introduces scientific experiment management for Assig
 
 
 ## 6. References
-Beyer, B., Jones, C., Petoff, J., & Murphy, N. R. (Eds.). (2016). *Site Reliability Engineering: How Google Runs Production Systems*. O’Reilly Media. Retrieved from [https://sre.google/sre-book/table-of-contents/](https://sre.google/sre-book/table-of-contents/).
+[1] B. Beyer, C. Jones, J. Petoff, and N. R. Murphy, Eds., *Site Reliability Engineering: How Google Runs Production Systems*. Sebastopol, CA, USA: O’Reilly Media, 2016. [Online]. Available: https://sre.google/sre-book/table-of-contents/
 
-DORA Research Program (2024). *Accelerate State of DevOps*. Google Cloud. Retrieved from [https://dora.dev/research/2024/dora-report/2024-dora-accelerate-state-of-devops-report.pdf](https://dora.dev/research/2024/dora-report/2024-dora-accelerate-state-of-devops-report.pdf).
+[2] J. Sweller, “Cognitive load during problem solving: Effects on learning,” *Cognitive Science*, vol. 12, no. 2, pp. 257–285, 1988, doi: 10.1207/s15516709cog1202_4.
 
-OpenGitOps. (n.d.). *OpenGitOps*. https://opengitops.dev/
+[3] DORA Research Program, *Accelerate: State of DevOps Report 2024*. Google Cloud, 2024. [Online]. Available: https://dora.dev/research/2024/dora-report/2024-dora-accelerate-state-of-devops-report.pdf
 
-Sweller, John. (1988). *Cognitive load during problem solving: Effects on learning.* Cognitive Science, 12(2), 257–285. [https://doi.org/10.1207/s15516709cog1202_4](https://doi.org/10.1207/s15516709cog1202_4).
+[4] OpenGitOps, “OpenGitOps,” *OpenGitOps*, [Online]. Available: https://opengitops.dev/
 
-Totin, Alexey. (2025). *Configuration Drift: The Pitfall of Local Machines*. JetBrains Blog. Retrieved from [https://blog.jetbrains.com/codecanvas/2025/08/configuration-drift-the-pitfall-of-local-machines/](https://blog.jetbrains.com/codecanvas/2025/08/configuration-drift-the-pitfall-of-local-machines/).
+[5] A. Totin, “Configuration drift: The pitfall of local machines,” *JetBrains Blog*, 2025. [Online]. Available: https://blog.jetbrains.com/codecanvas/2025/08/configuration-drift-the-pitfall-of-local-machines/
+
 
 ## 7. Declarative Use of Generative AI
 Chatbots (ChatGPT and Claude) were used to rephrase text and improve style, structure, and grammar. They were not used to generate new content, but rather to improve the overall clarity, consistency, and readability of the report. Additionally to LLMs, Grammarly has been used to correct any grammar mistakes.
