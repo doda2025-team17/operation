@@ -3,16 +3,58 @@
 This document describes the final deployment architecture of the **SMS Spam Detection System** as deployed on a Kubernetes cluster provisioned using Vagrant, VirtualBox, and Ansible. It focuses on:
 
 - How each component is deployed and interacts with the others
-
 - How user requests flow through the system
-
 - How Istio handles weighted and sticky routing
-
 - How the shadow model launch is implemented
-
 - How observability (Prometheus + Grafana) is integrated
 
 This document is intended to give new contributors a clear, high-level understanding of the design so they can confidently participate in design and implementation discussions.
+
+---
+
+## Table of Contents
+
+- [1. System Overview](#1-system-overview)
+- [2. High-Level Architecture](#2-high-level-architecture)
+  - [2.1 Design Decisions and Trade-offs](#21-design-decisions-and-trade-offs)
+- [3. Deployment Structure](#3-deployment-structure)
+  - [3.1 Kubernetes Resources](#31-kubernetes-resources)
+- [4. Networking & Access Points](#4-networking--access-points)
+- [5. Request Flow](#5-request-flow)
+  - [5.1 Full Request Path Through The System](#51-full-request-path-through-the-system)
+  - [5.2 Ingress-Level Routing (NGINX)](#52-ingress-level-routing-nginx)
+- [6. Istio Traffic Management](#6-istio-traffic-management)
+  - [6.1 90/10 Traffic Split](#61-9010-traffic-split)
+  - [6.2 Sticky Sessions](#62-sticky-sessions)
+- [7. Model Shadow Launch (Additional Use Case)](#7-model-shadow-launch-additional-use-case)
+- [8. Monitoring & Observability](#8-monitoring--observability)
+- [9. Storage: HostPath Model Directory](#9-storage-hostpath-model-directory)
+- [10. Where Routing Decisions Happen](#10-where-routing-decisions-happen)
+
+---
+
+## Glossary
+
+- **CRD (Custom Resource Definition)**  
+  Kubernetes mechanism to define custom resource types (e.g., `PrometheusRule`, `ServiceMonitor`, `AlertmanagerConfig`).
+
+- **VirtualService (VS)**  
+  Istio resource that controls how requests are routed to services (e.g., 90/10 split, mirroring rules).
+
+- **DestinationRule (DR)**  
+  Istio resource that defines subsets (like `v1`, `v2`) and traffic policies (e.g., sticky sessions via cookies).
+
+- **Subset**  
+  A version-specific group of pods defined in a `DestinationRule`, typically labeled by `version` (e.g., `v1` for stable, `v2` for canary).
+
+- **Mirroring (Shadow Traffic)**  
+  Copying live traffic to another service instance (e.g., new model version) **without** affecting the user-facing response, used to evaluate new versions safely.
+
+- **Ingress**  
+  Kubernetes resource that exposes HTTP(S) services from inside the cluster to the outside world (here: NGINX Ingress at `sms-app.local`).
+
+- **Istio Gateway**  
+  Istio’s entry point for external traffic, similar to an Ingress but for Istio-managed routes (here: `sms-istio.local`).
 
 ---
 
@@ -43,7 +85,7 @@ Core goals of the deployment:
 The overall architecture is shown in Figure 1.
 
 <figure>
-  <img src="images/documentation/deployment-architecture.jpeg" alt="SMS App Deployment Architecture">
+  <img src="images/deployment/deployment-architecture.jpeg" alt="SMS App Deployment Architecture">
   <figcaption><b>Figure 1:</b> SMS App Deployment Architecture</figcaption>
 </figure>
 
@@ -78,6 +120,18 @@ Additional infrastructure components:
 - **Flannel** (pod networking)
 
 - **HostPath shared storage** at `/mnt/shared/models` (common to all VMs)
+
+### 2.1 Design Decisions and Trade-offs
+
+To make the deployment easier to reason about (and to support experimentation), we made a few explicit architectural choices:
+
+| Decision                                                                        | Why                                                                                                                                                                                                  | Trade-off                                                                                                                                                                                                     |
+| ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Use **Istio** (in addition to NGINX) for canary & shadow traffic                | Istio gives first-class support for weighted routing, sticky sessions, and traffic mirroring without changing application code. This keeps experiment logic in configuration rather than in the app. | More moving parts (Gateway, VirtualService, DestinationRule), higher operational complexity, and additional learning curve for new team members.                                                              |
+| Implement **90/10 canary** with **sticky sessions via cookie**                  | A weighted canary lets us gradually roll out v2 while limiting blast radius. Sticky sessions ensure users consistently see the same version, which makes metrics and UX comparable over time.        | Individual users don’t experience both variants, so we get fewer direct A/B comparisons per user. Also, misconfiguring cookie TTL or subset labels could skew traffic.                                        |
+| Use **shadow model (v2) via Istio mirroring** instead of exposing v2 directly   | Shadow launch lets us test a new model under real production traffic without impacting user-visible behavior. We can compare latency and accuracy metrics safely before promoting v2.                | Doubles the amount of inference work for mirrored requests, increasing resource usage. Shadow results are not visible to users, so additional tooling is needed to analyze them.                              |
+| Store model artifacts on a **hostPath shared directory** (`/mnt/shared/models`) | Keeps Docker images small and allows updating model files without rebuilding and redeploying images. All nodes see the same model directory thanks to the shared Vagrant mount.                      | Tightly couples the cluster to the underlying VM layout; not suitable for cloud-native or multi-node storage scenarios. In a real production environment we’d likely switch to a networked or managed volume. |
+| Use **kube-prometheus-stack** for monitoring & alerting                         | Reuses a well-maintained chart that bundles Prometheus, Alertmanager, Grafana, CRDs, and recommended defaults. We only have to wire ServiceMonitors, rules, and dashboards.                          | Less fine-grained control over individual components and more YAML/CRDs to understand (PrometheusRule, AlertmanagerConfig, dashboards via ConfigMaps) compared to a minimal custom setup.                     |
 
 ---
 
@@ -171,6 +225,8 @@ LoadBalancer IP assignments:
                      +------------------------------+
 ```
 
+> Note: We maintain two ingress paths to separate experimental traffic (sms-istio.local) from stable production traffic (sms-app.local). This isolation prevents experiment-specific failures (e.g., misconfigured VirtualService or canary subset) from impacting all users.
+
 ### 5.2 Ingress-Level Routing (NGINX)
 
 Requests sent to `sms-app.local` are handled using this path:
@@ -254,6 +310,8 @@ Effect:
 
 - Ensures stable UX and cleaner experiment data
 
+> Important: The sms-app-version cookie ensures users see the same app version during their session. This is critical for clean experiment data, but it also means that users will not see new versions until their cookie expires (currently 1 hour).
+
 ---
 
 ## 7. Model Shadow Launch (Additional Use Case)
@@ -298,6 +356,18 @@ This means **10% of real classification requests** are replayed to the shadow mo
 ---
 
 ## 8. Monitoring & Observability
+
+This is the representation of the metrics flow in the system:
+
+```mermaid
+graph LR
+    A[App /metrics] --> B[ServiceMonitor]
+    C[Model /metrics] --> D[ServiceMonitor]
+    B --> E[Prometheus]
+    D --> E
+    E --> F[Grafana Dashboard]
+    E --> G[AlertManager]
+```
 
 Both app and model expose Prometheus metrics:
 
@@ -392,10 +462,14 @@ This allows:
 
 ## 10. Where Routing Decisions Happen
 
-| Decision                 | Component                                 |
-| ------------------------ | ----------------------------------------- |
-| HTTP routing             | NGINX Ingress                             |
-| Istio host-based routing | Istio Gateway                             |
-| Stable vs Canary (90/10) | Istio VirtualService                      |
-| Version consistency      | Istio DestinationRule (sticky cookie)     |
-| Shadow model mirroring   | Istio VirtualService (`mirrorPercentage`) |
+The main routing and experimentation decisions are controlled by the following components:
+
+| Decision                              | Component                            | Defined via Helm                                                                               | Can be changed at runtime?                                                 |
+| ------------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| HTTP routing (sms-app.local)          | NGINX Ingress (Kubernetes `Ingress`) | `helm/templates/ingress.yaml` + `values.ingress.*`                                             | **Yes** – update Ingress host/paths via `helm upgrade` or `kubectl apply`. |
+| Istio host-based routing              | Istio `Gateway`                      | `helm/templates/istio-gateway.yaml` + `values.istio.hosts`                                     | **Yes** – change hosts or selector via `helm upgrade`.                     |
+| Stable vs Canary (90/10)              | Istio `VirtualService` (app)         | `helm/templates/istio-virtualservice.yaml` + `values.istio.canary.weights`                     | **Yes** – adjust weights live via `helm upgrade` (no downtime).            |
+| Version consistency (sticky sessions) | Istio `DestinationRule`              | `helm/templates/isio-destinationrule.yaml` + `values.istio.canary.stickyCookie.*`              | **Yes** – enable/disable sticky cookie or change TTL at runtime.           |
+| Shadow model mirroring                | Istio `VirtualService` (model)       | `helm/templates/istio-model-virtualservice.yaml` + `values.modelService.shadow.mirror.percent` | **Yes** – adjust mirror percentage live via `helm upgrade`.                |
+
+> **Runtime updates**: Most routing decisions can be updated without downtime by changing Helm values in `values.yaml` and running `helm upgrade`. In particular, the **90/10 traffic split** and the **shadow mirror percentage** are designed to be tuned during an experiment, so you can gradually ramp up canary or shadow traffic while the system is running.
