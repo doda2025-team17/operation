@@ -20,4 +20,9 @@ spec:
       path: {{ .Values.monitoring.paths.app }}
       interval: {{ .Values.monitoring.scrapeInterval }}
       scheme: http
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_label_version]
+          targetLabel: version
+        - sourceLabels: [__meta_kubernetes_pod_name]
+          targetLabel: pod
 {{- end }}
