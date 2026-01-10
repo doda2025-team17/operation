@@ -7,6 +7,7 @@ No work.
 ## Week Q4.2 (Nov. 17 - 23)
 
 ### Rebecca
+
 - attended all the team meetings (Tuesday, Thursday, and Friday)
 - completed F7, along with the README.md and ACTIVITY.md files (PR [#1](https://github.com/doda2025-team17/operation/pull/1)) and F8(PR [#4](https://github.com/doda2025-team17/model-service/pull/4) and [#3](https://github.com/doda2025-team17/app/pull/3))
 - reviewed a large number of other people's PRs
@@ -38,6 +39,7 @@ No work.
 ## Week Q4.3 (Nov. 24 - 30)
 
 ### Rebecca
+
 - attended all team meetings (Sunday, Thursday, and Friday)
 - completed Steps 7-12 in PR [#8](https://github.com/doda2025-team17/operation/pull/8), [#9](https://github.com/doda2025-team17/operation/pull/9), and [#10](https://github.com/doda2025-team17/operation/pull/10)
 - generated an `inventory.cfg` file for Excellent requirement (PR [#21](https://github.com/doda2025-team17/operation/pull/21))
@@ -73,6 +75,7 @@ No work.
 ## Week Q4.4 (Dec. 1 - Dec. 7)
 
 ### Rebecca
+
 - completed the Ansible installation (PR [#26](https://github.com/doda2025-team17/operation/pull/26))
 - completed the Docker-compose to Kubernetes migration (PR [#34](https://github.com/doda2025-team17/operation/pull/34))
 - added Assignment 3 to the `README.md` file (PR [#38](https://github.com/doda2025-team17/operation/pull/38))
@@ -85,6 +88,7 @@ No work.
 - Reviewed other peoples PRs
 
 ### Kristian
+
 - Helped with the testing of the fixes for module-service.
 - Reviewed PRs of my teammates.
 - Spent a lot of time trying to fix my WSL setup.
@@ -109,15 +113,18 @@ No work.
 ## Week Q4.5 (Dec. 8 - 14)
 
 ### Rebecca
+
 - attended all team meetings
 - helped fix failing PRs ([here](https://github.com/doda2025-team17/operation/pull/41/commits/490d255bf929abe671f49c3cc85c6e8c42136b86))
 - reviewed other PRs
 
 ### Arnav
+
 - Attended all team meetings
 - Worked on the alerting task (PR [#44](https://github.com/doda2025-team17/operation/pull/44))
 
 ### Kristian
+
 - Attended all of the team meetings.
 - Completed the Monitoring task (PR [#41](https://github.com/doda2025-team17/operation/pull/41)) in the "operation" repo, (PR [#18](https://github.com/doda2025-team17/app/pull/18)) in the "app" repo and (PR [#10](https://github.com/doda2025-team17/model-service/pull/10)) in the "model-service" repo.
 
@@ -129,26 +136,31 @@ No work.
 - helped in finishing monitoring task (PR [#41](https://github.com/doda2025-team17/operation/pull/41))
 
 ### Nicholas
+
 - Reviewed and tested numerous PR's from the team.
 - Attended the team meeting on Thurday.
 
 ## Week Q4.6 (Dec. 15 - 21)
 
 ### Rebecca
+
 - Added a second Grafana Dashboard to fulfill the "Excellent" requirement for A3 and to help setup the Continuous Experimentation part of A4 in PR [#53](https://github.com/doda2025-team17/operation/pull/53).
 - Reviewed Additional Use Case PR.
 
 ### Arnav
 
 ### Kristian
+
 - Implemented the additional use case: Shadow Launch, passing the "Sufficient" criteria (PR [#55](https://github.com/doda2025-team17/operation/pull/55)).
 - Reviewd a PR.
 
 ### Ana
+
 - Reviewed Traffic Management PR
 - Improved README document for helm and Traffic Management for excellent standard (PR [#49](https://github.com/doda2025-team17/operation/pull/49))
 
 ### Nicholas
+
 - Reviewed numerous PR's from the team.
 - Implemented the Traffic Management part of Assignment 4 (PR [$48](https://github.com/doda2025-team17/operation/pull/48)).
 
@@ -161,6 +173,9 @@ No work.
 ### Kristian
 
 ### Ana
+
+- Reviewed extension PR [#60](https://github.com/doda2025-team17/operation/pull/60)
+- Finished initial deployment documentation PR [#61](https://github.com/doda2025-team17/operation/pull/61)
 
 ### Nicholas
 
