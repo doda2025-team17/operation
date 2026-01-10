@@ -139,6 +139,8 @@ No work.
 - Reviewed Additional Use Case PR.
 
 ### Arnav
+- Added and enabled variables to work on the Continuous Experimentation part of the assignment and update pom versions in app and model-service
+- Reviewed multiple PRs
 
 ### Kristian
 - Implemented the additional use case: Shadow Launch, passing the "Sufficient" criteria (PR [#55](https://github.com/doda2025-team17/operation/pull/55)).
@@ -157,6 +159,8 @@ No work.
 ### Rebecca
 
 ### Arnav
+- Worked on making two versions for both App and Model-service
+- Made a cache feature for App for CE as part of the additional feature requirement
 
 ### Kristian
 
