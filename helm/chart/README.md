@@ -154,6 +154,11 @@ kubectl run curl-test --rm -it -n sms-app --image=curlimages/curl --restart=Neve
 # Logs: both stable (v1) and shadow (v2) should show POST /predict
 kubectl logs -n sms-app -l app.kubernetes.io/name=sms-app-model,version=v1 --tail=5
 kubectl logs -n sms-app -l app.kubernetes.io/name=sms-app-model,version=v2 --tail=5
+
+# Optional: verify metrics split by version/source in Prometheus
+kubectl port-forward -n sms-app svc/sms-app-kube-prometheus-st-prometheus 9090:9090
+# PromQL:
+sum by (version,source) (rate(sms_model_predictions_total{namespace="sms-app"}[1m]))
 ```
 
 ## Uninstall
