@@ -148,6 +148,8 @@ No work.
 - Reviewed Additional Use Case PR.
 
 ### Arnav
+- Added and enabled variables to work on the Continuous Experimentation part of the assignment and update pom versions in app and model-service
+- Reviewed multiple PRs
 
 ### Kristian
 
@@ -169,6 +171,8 @@ No work.
 ### Rebecca
 
 ### Arnav
+- Worked on making two versions for both App and Model-service
+- Made a cache feature for App for CE as part of the additional feature requirement
 
 ### Kristian
 
