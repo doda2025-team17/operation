@@ -348,10 +348,21 @@ mirror:
   host: sms-app-model
   subset: v2
 mirrorPercentage:
-  value: 10
+  value: 25  # configurable via values.yaml
 ```
 
-This means **10% of real classification requests** are replayed to the shadow model.
+This means **a configurable percentage of real classification requests** are replayed to the shadow model.
+
+### Metrics & Evaluation
+
+- Model metrics (`sms_model_predictions_total`, `sms_model_inference_seconds_*`) are scraped with `version` and `source` labels.
+  - Stable pods report `source="app", version="v1"`; shadow pods report `source="shadow", version="v2"`.
+- The Grafana “Shadow vs Stable (Model Service)” dashboard compares v1 vs v2 for request rate, inference time, and other counters.
+- Prometheus quick check:
+  ```
+  sum by (version,source) (rate(sms_model_predictions_total{namespace="sms-app"}[1m]))
+  ```
+  shows mirrored traffic reaching the shadow model without affecting user responses.
 
 ---
 
