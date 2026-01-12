@@ -157,8 +157,13 @@ kubectl logs -n sms-app -l app.kubernetes.io/name=sms-app-model,version=v2 --tai
 
 # Optional: verify metrics split by version/source in Prometheus
 kubectl port-forward -n sms-app svc/sms-app-kube-prometheus-st-prometheus 9090:9090
-# PromQL:
-sum by (version,source) (rate(sms_model_predictions_total{namespace="sms-app"}[1m]))
+
+# Open browser and go to
+http://localhost:9090
+
+# Then in the Prometheus UI, paste this query in the search box:
+sum by (version,source) (rate(sms_model_predictions_total{namespace="sms-app"}[1m])) 
+
 ```
 
 ## Uninstall
