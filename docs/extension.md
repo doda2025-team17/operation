@@ -64,7 +64,7 @@ Ultimately, we want our extension to go beyond our specific project to address a
 
 ### 2.2. High-Level Design
 
-The proposed extension introduces a centralized, declarative release architecture that restructures the current workflow around a single deployment control plane. The design establishes the `operation` repository as the deployment control plane, with the `app` and `model-service` repositories serving as specialized artifact producers. This architecture follows the GitOps principle of having a "single source of truth" for deployment state [4], while still maintaining a clear separation of concerns.
+The proposed extension introduces a centralized, declarative release architecture that restructures the current workflow around a single deployment control plane. The design establishes the `operation` repository as the deployment control plane, with the `app` and `model-service` repositories serving as specialized artifact producers. This architecture follows the GitOps principle of having a "single source of truth" for deployment state [4], and is inspired by cross-repository CI/CD patterns documented in industry literature [5], which show how GitHub Actions can coordinate workflows across independent repositories while maintaining separation of concerns.
 
 At the core of the design, the `operation` repository becomes the authoritative source of truth for the deployment state. This means that rather than developers having to manually coordinate releases across repositories, `operation` declaratively specifies which versions of `app` and `model-service` should run in each environment. Furthermore, the `app` and `model-service` repositories are conceptually reframed as **artifact producers**. Their responsibility ends at producing versioned, immutable build artifacts. Then, once the artifacts are published, deployment is influenced exclusively by the changes to the declarative state in the `operation` repository.
 
@@ -85,7 +85,7 @@ The architecture we have presented is a generalizable pattern for multi-reposito
 
 The proposed architecture directly addresses each negative impact identified in [Section 1.3](#13-negative-impacts) through three improvements:
 
-First, it creates an automatic and reliable way of tracking what is deployed where. In the current setup, determining which versions are running requires checking multiple locations and takes a significant amount of time. Our proposed solution makes the `operation` repository the single source of truth, with every deployment recorded in Git history, preventing drift [5] between the deployed and specified versions. This provides an immediate answer to the question "what's running?" and therefore helps solve the reproducibility issue noted in [Section 1.2](#12-the-release-engineering-problem).
+First, it creates an automatic and reliable way of tracking what is deployed where. In the current setup, determining which versions are running requires checking multiple locations and takes a significant amount of time. Our proposed solution makes the `operation` repository the single source of truth, with every deployment recorded in Git history, preventing drift [6] between the deployed and specified versions. This provides an immediate answer to the question "what's running?" and therefore helps solve the reproducibility issue noted in [Section 1.2](#12-the-release-engineering-problem).
 
 Second, it removes the coordination bottlenecks that slow down working in parallel. Currently, developers must manually synchronize their work across repositories, which creates delays. The event-driven solution allows developers to work in parallel: they can independently build and test their changes, while the deployment control plane automatically detects compatible versions and orchestrates coordinated releases. This eliminates the sequential blocking tasks described in [Section 1.3](#13-negative-impacts) and enables true independent development.
 
@@ -96,11 +96,32 @@ Additionally, the solution introduces scientific experiment management for Assig
 
 ## 3. Implementation Plan
 
+This section describes how the proposed cross-repository CI/CD extension could realistically be implemented. The plan is divided into three phases, which incrementally improve the existing design and can be validated in isolation:
+
+1. Standardizing artifact production
+2. Establishing the deployment control plane
+3. Integrating the experiment configuration as declarative state
+
+
 ### 3.1. Standardize Image Building
+
+The first phase of the implementation standardizes how Docker images are built and published in the `app` and `model-service` repositories, replacing the current manual steps with fully automated CI workflows, whose sole responsibility is producing immutable artifacts, as described in Figure 3. 
+
+<!-- To be created:
+<figure> 
+  <img src="images/extension/image-build-workflow.png" alt="Automated image build pipeline"> 
+  <figcaption><b>Figure 3:</b> Automated Artifact Production Pipeline for the <code>app</code> and <code>model-service</code> Repositories.</figcaption> 
+</figure> -->
+
+Each repository is extended with a Github Actions workflow that triggers on well-defined versioning events, such as pushes to the `main` branch or on annotated Git tags, like the existing mechanism. The pipeline is responsible for performing a compiling the application, running any test suites, building a Docker image, and publishing that image to the Github Container Registry. It is important to note that the workflow does not contain any deployment logic, nor does it interact with the Kubernetes cluster of the `operation` repository. They are limited strictly to artifact production, as imagined in [Section 2.2](#22-high-level-design).
+
+Versioning follows the conventions already established in the project. Stable releases are produced only when an explicit semantic version tag is pushed, while feature branches may produce pre-release images for testing purposes. Each published image is immutable and, for traceability purposes, includes standard OCI metadata labels that link it to its source repository, commit hash, build timestamp, and version tag.
+
+Once this phase is complete, all manual `docker build` and `docker push` steps are eliminated, and every container image becomes immutable, versioned, and reproducible.
 
 ### 3.2. Create a Deployment Control Plane
 
-### 3.3. Integrate the Experiment Configuration into the Project
+### 3.3. Integrate the Experiment Configuration as Declarative Deployment State
 
 
 ## 4. Experiment Design
@@ -138,7 +159,9 @@ Additionally, the solution introduces scientific experiment management for Assig
 
 [4] OpenGitOps, “OpenGitOps,” *OpenGitOps*, [Online]. Available: https://opengitops.dev/
 
-[5] A. Totin, “Configuration drift: The pitfall of local machines,” *JetBrains Blog*, 2025. [Online]. Available: https://blog.jetbrains.com/codecanvas/2025/08/configuration-drift-the-pitfall-of-local-machines/
+[5] I. Mujagic, "Efficient Cross-Repository CI/CD: Running Targeted Tests with GitHub Actions," *The Green Report Blog*, Sep. 28, 2023. [Online]. Available: https://www.thegreenreport.blog/articles/efficient-cross-repository-cicd-running-targeted-tests-with-github-actions/efficient-cross-repository-cicd-running-targeted-tests-with-github-actions.html.
+
+[6] A. Totin, “Configuration drift: The pitfall of local machines,” *JetBrains Blog*, 2025. [Online]. Available: https://blog.jetbrains.com/codecanvas/2025/08/configuration-drift-the-pitfall-of-local-machines/
 
 
 ## 7. Declarative Use of Generative AI
