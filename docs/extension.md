@@ -115,7 +115,7 @@ The first phase of the implementation standardizes how Docker images are built a
 
 Each repository is extended with a Github Actions workflow that triggers on well-defined versioning events, such as pushes to the `main` branch or on annotated Git tags, like the existing mechanism. The pipeline is responsible for performing a compiling the application, running any test suites, building a Docker image, and publishing that image to the Github Container Registry. It is important to note that the workflow does not contain any deployment logic, nor does it interact with the Kubernetes cluster of the `operation` repository. They are limited strictly to artifact production, as imagined in [Section 2.2](#22-high-level-design).
 
-Versioning follows the conventions already established in the project. Stable releases are produced only when an explicit semantic version tag is pushed, while feature branches may produce pre-release images for testing purposes. Each published image is immutable and, for traceability purposes, includes standard OCI metadata labels [7] that link it to its source repository, commit hash, build timestamp, and version tag.
+Versioning follows the conventions already established in the project. Stable releases are produced only when an explicit semantic version tag is pushed, while feature branches may produce pre-release images for testing purposes. Each published image is immutable, triggers a notification to the `operation` repository signaling that new artifacts are available, and, for traceability purposes, includes standard OCI metadata labels [7] that link it to its source repository, commit hash, build timestamp, and version tag.
 
 Once this phase is complete, all manual `docker build` and `docker push` steps are eliminated, and every container image becomes immutable, versioned, and reproducible.
 
@@ -130,7 +130,7 @@ The second phase (Figure 4) introduces the central element of the proposed exten
 
 We achieve this by adding explicit environment directories, such as staging, production, and experiment, to the `operation` repository. Each should contain configuration files that declare which versions of `app` and `model-service` images are expected to run, along with any environment-specific Helm commands. These files describe what the desired deployment state should be and can be versioned through Git like any other code. As a result, Git history becomes a complete record of every deployment decision and can be inspected whenever necessary.
 
-We further introduce a GitOps controller, such as FluxCD [8] or ArgoCD [9], into the Kuberneted cluster during the provisioning phase. Once installed, the controller continuously monitors the `operation` repository and reconciles the running cluster state against the declared configuration. Any difference is automatically corrected. Conversely, any change to an environment configuration through a Git commit, such updating an image tag or modifying Helm values, results in a corresponding update to the cluster.
+We further introduce a GitOps controller, such as FluxCD [8] or ArgoCD [9], into the Kuberneted cluster during the provisioning phase by extending the existing playbooks. Once installed, the controller continuously monitors the `operation` repository and reconciles the running cluster state against the declared configuration. Any difference is automatically corrected. Conversely, any change to an environment configuration through a Git commit, such updating an image tag or modifying Helm values, results in a corresponding update to the cluster.
 
 By making the operation repository the single source of truth, this phase directly addresses the reproducibility and traceability problems identified in [Section 1.2](#12-the-release-engineering-problem). Rollbacks become trivial Git operations, deployment history is inherently auditable, and the question of “what is currently running” can be answered deterministically by inspecting the repository state.
 
@@ -151,10 +151,30 @@ Observability can be integrated using the existing monitoring stack. Metrics are
 
 
 ## 4. Experiment Design
+This section describes how the impact of the proposed cross-repository CI/CD extension can be evaluated in a structured and reproducible manner. The goal of the experiment is to demonstrate, within the scope of this project, that the proposed changes measurably improve efficiency and reproducibility when compared to the existing manual workflow described in [Section 1.1](#11-current-state).
 
 ### 4.1. Hypothesis
 
+Formally stated, we make the following hypotheses:
+
+**1. H1 (Deployment Efficiency):** Introducing an automated, GitOps-based CI/CD pipeline reduces the time required to deploy a new application version compared to the current manual process.
+
+**2. H2 (Reproducibility):**  Deployment states managed declaratively through the operation repository can be reliably reproduced from version control without relying on undocumented manual steps.
+
+**3. H3 (Operational Robustness):** Automating release coordination across repositories reduces configuration mismatches and deployment-related errors.
+
+These hypotheses directly correspond to the shortcomings identified in Sections [1.2](#12-the-release-engineering-problem) and [1.3](#13-negative-impacts).
+
 ### 4.2. Metrics
+
+To test our hypotheses, we define the following set of measurable and observable metrics:
+
+**1. Deployment Lead Time**, as measured by the time taken between pushing a change to a repository and the application becoming accessible at `http://localhost:8080`. This metric captures the operational impact of our automation and represents the “change lead time” concept emphasized by DORA [3].
+
+**2. Deployment Reproducibility**, as evaluated by trying to recreate a previously deployed state using only the Git history of the `operation` repository. It is considered successful if the cluster reaches the correct declared image versions and routing configuration without needing any undocumented manual intervention. 
+
+**3. Deployment Error Frequency**, tracked qualitatively by recording any time a deployment needs any manual intervention, such as fixing an image tag mismatch or incorrect Helm values.
+
 
 ### 4.3. Experiment Methodology
 
