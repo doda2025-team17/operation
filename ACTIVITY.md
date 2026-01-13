@@ -162,11 +162,14 @@ No work.
 ### Nicholas
 
 - Reviewed numerous PR's from the team.
-- Implemented the Traffic Management part of Assignment 4 (PR [$48](https://github.com/doda2025-team17/operation/pull/48)).
+- Implemented the Traffic Management part of Assignment 4 (PR [#48](https://github.com/doda2025-team17/operation/pull/48)).
 
 ## Week Q4.7 (Jan. 5 - 11)
 
 ### Rebecca
+
+- Wrote the first part of the Extension Proposal (~2000 words) in PR [#60](https://github.com/doda2025-team17/operation/pull/60)
+- Reviewed the Deployment Documentation PR 
 
 ### Arnav
 
