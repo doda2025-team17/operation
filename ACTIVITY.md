@@ -144,7 +144,7 @@ No work.
 
 ### Rebecca
 
-- Added a second Grafana Dashboard to fulfill the "Excellent" requirement for A3 and to help setup the Continuous Experimentation part of A4 in PR [#53](https://github.com/doda2025-team17/operation/pull/53).
+- Added a second Grafana Dashboard to fulfill the "Excellent" requirement for A3 and to help setup the Continuous Experimentation part of A4 in PR [#53](https://github.com/doda2025-team17/operation/pull/53). This is complemented by PRs in the `model-service` [#11] (https://github.com/doda2025-team17/model-service/pull/11) and `app` [19](https://github.com/doda2025-team17/app/pull/19) repositories.
 - Reviewed Additional Use Case PR.
 
 ### Arnav
