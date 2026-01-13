@@ -135,7 +135,19 @@ We further introduce a GitOps controller, such as FluxCD [8] or ArgoCD [9], into
 By making the operation repository the single source of truth, this phase directly addresses the reproducibility and traceability problems identified in [Section 1.2](#12-the-release-engineering-problem). Rollbacks become trivial Git operations, deployment history is inherently auditable, and the question of “what is currently running” can be answered deterministically by inspecting the repository state.
 
 
-### 3.3. Integrate the Experiment Configuration as Declarative Deployment State
+### 3.3. Integrate the Experiment Configuration into the Project
+
+The last phase extends the Deployment Control Plane to support experimentation in a structured and reproducible way. In the current workflow, experiments require a series of manual configuration steps and are difficult to reproduce once completed. This phase addresses that issue by treating experiment setups as declarative deployment variants, as seen in Figure 5.
+
+<!-- To be created:
+<figure> 
+  <img src="images/extension/experiment-lifecycle.png" alt="Declarative experiment lifecycle"> 
+  <figcaption><b>Figure 5:</b> Lifecycle of an Experiment Managed through the Deployment Control Plane.</figcaption> 
+</figure> -->
+
+Experiments are represented as environment-specific configuration files within the `operation` repository. Each experiment file explicitly defines the image versions under test, along with the necessary traffic routing strategy and any other relevant Istio settings, such as canary or A/B traffic splits. For example, a canary experiment could be represented as a Helm values override combined with an Istio VirtualService that routes a fixed percentage of traffic to a new model version. Because these configurations are applied through the same GitOps reconciliation mechanism as in [Section 3.2](#32-create-a-deployment-control-plane), experiments are also guaranteed to be traceable, auditable, and reversible.
+
+Observability can be integrated using the existing monitoring stack. Metrics are collected through Prometheus, and Grafana dashboards are defined as version-controlled artifacts, which means the experiment results can be consistently inspected across runs. The analysis of any outcomes can be performed outside of the deployment pipeline itself, while still being traceable to the exact deployment state that produced them.
 
 
 ## 4. Experiment Design
@@ -159,9 +171,11 @@ By making the operation repository the single source of truth, this phase direct
 
 ### 5.1. Assumptions
 
-### 5.2. Potential Downsides
+### 5.2. Impact of Changes upon the Project
 
-### 5.3. Why Benefits Outweigh the Risks
+### 5.3. Potential Downsides
+
+### 5.4. Why Benefits Outweigh the Risks
 
 
 ## 6. References
