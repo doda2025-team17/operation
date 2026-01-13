@@ -144,7 +144,7 @@ No work.
 
 ### Rebecca
 
-- Added a second Grafana Dashboard to fulfill the "Excellent" requirement for A3 and to help setup the Continuous Experimentation part of A4 in PR [#53](https://github.com/doda2025-team17/operation/pull/53).
+- Added a second Grafana Dashboard to fulfill the "Excellent" requirement for A3 and to help setup the Continuous Experimentation part of A4 in PR [#53](https://github.com/doda2025-team17/operation/pull/53). This is complemented by PRs in the `model-service` [#11] (https://github.com/doda2025-team17/model-service/pull/11) and `app` [19](https://github.com/doda2025-team17/app/pull/19) repositories.
 - Reviewed Additional Use Case PR.
 
 ### Arnav
@@ -164,11 +164,14 @@ No work.
 ### Nicholas
 
 - Reviewed numerous PR's from the team.
-- Implemented the Traffic Management part of Assignment 4 (PR [$48](https://github.com/doda2025-team17/operation/pull/48)).
+- Implemented the Traffic Management part of Assignment 4 (PR [#48](https://github.com/doda2025-team17/operation/pull/48)).
 
 ## Week Q4.7 (Jan. 5 - 11)
 
 ### Rebecca
+
+- Wrote the first part of the Extension Proposal (~2000 words) in PR [#60](https://github.com/doda2025-team17/operation/pull/60)
+- Reviewed the Deployment Documentation PR 
 
 ### Arnav
 - Worked on making two versions for both App and Model-service
