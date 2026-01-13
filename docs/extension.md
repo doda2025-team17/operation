@@ -121,15 +121,18 @@ Once this phase is complete, all manual `docker build` and `docker push` steps a
 
 ### 3.2. Create a Deployment Control Plane
 
-The second phase introduces the central element of the proposed extension, namely the Deployment Control Plane, implemented within the `operation` repository, that becomes the authoritative source of truth on deployment-relevant information. 
-
-We achieve this by adding explicit environment directories, such as staging, production, and experiment, to the `operation` repository. Each should contain configuration files that declare which versions of `app` and `model-service` images are expected to run, along with any environment-specific Helm commands. These files describe what the desired deployment state should be and can be versioned through Git like any other code. As a result, Git history becomes a complete record of every deployment decision and can be inspected whenever necessary.
+The second phase (Figure 4) introduces the central element of the proposed extension, namely the Deployment Control Plane, implemented within the `operation` repository, that becomes the authoritative source of truth on deployment-relevant information.
 
 <!-- To be created:
 <figure> 
   <img src="images/extension/reconciliation-flow.png" alt="GitOps reconciliation loop"> <figcaption><b>Figure 4:</b> GitOps Reconciliation Loop between the <code>operation</code> repository and the Kubernetes Cluster.</figcaption> 
 </figure> -->
 
+We achieve this by adding explicit environment directories, such as staging, production, and experiment, to the `operation` repository. Each should contain configuration files that declare which versions of `app` and `model-service` images are expected to run, along with any environment-specific Helm commands. These files describe what the desired deployment state should be and can be versioned through Git like any other code. As a result, Git history becomes a complete record of every deployment decision and can be inspected whenever necessary.
+
+We further introduce a GitOps controller, such as FluxCD [8] or ArgoCD [9], into the Kuberneted cluster during the provisioning phase. Once installed, the controller continuously monitors the `operation` repository and reconciles the running cluster state against the declared configuration. Any difference is automatically corrected. Conversely, any change to an environment configuration through a Git commit, such updating an image tag or modifying Helm values, results in a corresponding update to the cluster.
+
+By making the operation repository the single source of truth, this phase directly addresses the reproducibility and traceability problems identified in [Section 1.2](#12-the-release-engineering-problem). Rollbacks become trivial Git operations, deployment history is inherently auditable, and the question of “what is currently running” can be answered deterministically by inspecting the repository state.
 
 
 ### 3.3. Integrate the Experiment Configuration as Declarative Deployment State
@@ -175,6 +178,10 @@ We achieve this by adding explicit environment directories, such as staging, pro
 [6] A. Totin, “Configuration drift: The pitfall of local machines,” *JetBrains Blog*, 2025. [Online]. Available: https://blog.jetbrains.com/codecanvas/2025/08/configuration-drift-the-pitfall-of-local-machines/
 
 [7] Open Container Initiative, *OCI Image Format Specification*, v1.0.2, 2021. [Online]. Available: https://github.com/opencontainers/image-spec/blob/main/annotations.md.
+
+[8] Flux Project Authors, "Flux - the GitOps family of projects," *Flux Documentation*, 2025. [Online]. Available: https://fluxcd.io/.
+
+[9] Argo Project Authors, "Argo CD - Declarative GitOps CD for Kubernetes," *Argo Project Documentation*, 2025. [Online]. Available: https://argoproj.github.io/cd/.
 
 ## 7. Declarative Use of Generative AI
 Chatbots (ChatGPT and Claude) were used to rephrase text and improve style, structure, and grammar. They were not used to generate new content, but rather to improve the overall clarity, consistency, and readability of the report. Additionally to LLMs, Grammarly has been used to correct any grammar mistakes.
