@@ -115,11 +115,22 @@ The first phase of the implementation standardizes how Docker images are built a
 
 Each repository is extended with a Github Actions workflow that triggers on well-defined versioning events, such as pushes to the `main` branch or on annotated Git tags, like the existing mechanism. The pipeline is responsible for performing a compiling the application, running any test suites, building a Docker image, and publishing that image to the Github Container Registry. It is important to note that the workflow does not contain any deployment logic, nor does it interact with the Kubernetes cluster of the `operation` repository. They are limited strictly to artifact production, as imagined in [Section 2.2](#22-high-level-design).
 
-Versioning follows the conventions already established in the project. Stable releases are produced only when an explicit semantic version tag is pushed, while feature branches may produce pre-release images for testing purposes. Each published image is immutable and, for traceability purposes, includes standard OCI metadata labels that link it to its source repository, commit hash, build timestamp, and version tag.
+Versioning follows the conventions already established in the project. Stable releases are produced only when an explicit semantic version tag is pushed, while feature branches may produce pre-release images for testing purposes. Each published image is immutable and, for traceability purposes, includes standard OCI metadata labels [7] that link it to its source repository, commit hash, build timestamp, and version tag.
 
 Once this phase is complete, all manual `docker build` and `docker push` steps are eliminated, and every container image becomes immutable, versioned, and reproducible.
 
 ### 3.2. Create a Deployment Control Plane
+
+The second phase introduces the central element of the proposed extension, namely the Deployment Control Plane, implemented within the `operation` repository, that becomes the authoritative source of truth on deployment-relevant information. 
+
+We achieve this by adding explicit environment directories, such as staging, production, and experiment, to the `operation` repository. Each should contain configuration files that declare which versions of `app` and `model-service` images are expected to run, along with any environment-specific Helm commands. These files describe what the desired deployment state should be and can be versioned through Git like any other code. As a result, Git history becomes a complete record of every deployment decision and can be inspected whenever necessary.
+
+<!-- To be created:
+<figure> 
+  <img src="images/extension/reconciliation-flow.png" alt="GitOps reconciliation loop"> <figcaption><b>Figure 4:</b> GitOps Reconciliation Loop between the <code>operation</code> repository and the Kubernetes Cluster.</figcaption> 
+</figure> -->
+
+
 
 ### 3.3. Integrate the Experiment Configuration as Declarative Deployment State
 
@@ -163,6 +174,7 @@ Once this phase is complete, all manual `docker build` and `docker push` steps a
 
 [6] A. Totin, “Configuration drift: The pitfall of local machines,” *JetBrains Blog*, 2025. [Online]. Available: https://blog.jetbrains.com/codecanvas/2025/08/configuration-drift-the-pitfall-of-local-machines/
 
+[7] Open Container Initiative, *OCI Image Format Specification*, v1.0.2, 2021. [Online]. Available: https://github.com/opencontainers/image-spec/blob/main/annotations.md.
 
 ## 7. Declarative Use of Generative AI
 Chatbots (ChatGPT and Claude) were used to rephrase text and improve style, structure, and grammar. They were not used to generate new content, but rather to improve the overall clarity, consistency, and readability of the report. Additionally to LLMs, Grammarly has been used to correct any grammar mistakes.
