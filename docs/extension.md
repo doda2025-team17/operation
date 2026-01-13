@@ -151,6 +151,7 @@ Observability can be integrated using the existing monitoring stack. Metrics are
 
 
 ## 4. Experiment Design
+
 This section describes how the impact of the proposed cross-repository CI/CD extension can be evaluated in a structured and reproducible manner. The goal of the experiment is to demonstrate, within the scope of this project, that the proposed changes measurably improve efficiency and reproducibility when compared to the existing manual workflow described in [Section 1.1](#11-current-state).
 
 ### 4.1. Hypothesis
@@ -175,16 +176,42 @@ To test our hypotheses, we define the following set of measurable and observable
 
 **3. Deployment Error Frequency**, tracked qualitatively by recording any time a deployment needs any manual intervention, such as fixing an image tag mismatch or incorrect Helm values.
 
+<!-- To be created:
+<figure> 
+  <img src="images/extension/experiment-metrics.png" alt="Experiment Metrics"> 
+  <figcaption><b>Figure 6:</b> Metrics used for the Extension Experiment.</figcaption> 
+</figure> -->
+
 
 ### 4.3. Experiment Methodology
 
+We compare the "before" and "after" states of the project based on the metrics in [Section 4.2](#42-metrics).
+
 #### Step 1: Establish a Baseline
+
+Using the current workflow, the application is deployed multiple times following the steps described in [Section 1.1](#11-current-state). For each run, the *deployment lead time* is recorded, and any *manual corrections or errors* are noted. In addition, one previously executed experiment is manually reproduced to check its *reproducibility* at the present time.
 
 #### Step 2: Enable the CI/CD Pipeline
 
+We enable the extension and repeat the same deployment process. Image versions are updated exclusively through commits to the `operation` repository, and deployments are triggered by the reconciliation mechanism rather than manual Helm commands.
+
 #### Step 3: Analysis
 
+The results of both phases are compared qualitatively and quantitatively, based on the metrics recorded in the previous steps.
+
 ### 4.4. Visualizations of the Results
+
+The results of the experiment can be visualized using the existing monitoring stack introduced in Assignments 3 and 4. Figure 7 presents an example way in which they can be illustrated. 
+
+<!-- To be created:
+<figure> 
+  <img src="images/extension/experiment-visualization.png" alt="Experiment Visualization"> 
+  <figcaption><b>Figure 7:</b> Example Visualizations that can be used for the Extension Experiment.</figcaption> 
+</figure> -->
+
+For instance, time-series graphs in Grafana could show the *deployment lead time* before and after automation. *Deployment reproducibility* could be visualized through the reduction of configuration drift, showing the transition from partially inconsistent states to a fully declarative and synchronized deployment state. Finally, *operational robustness* could be illustrated by experiment success rates, comparing the number of manual deployments that need some human intervention with the number of fully automated runs that complete without errors.
+
+These visualizations support the central claim of the extension, which is that deployment state becomes observable, traceable, and reproducible once it is managed declaratively.
 
 
 ## 5. Discussion
