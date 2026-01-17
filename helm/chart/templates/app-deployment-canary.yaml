@@ -58,7 +58,7 @@ spec:
                   name: {{ include "sms-app.fullname" . }}-secrets
                   key: SMTP_PASSWORD
             - name: DASHBOARD_VERSION
-              value: {{ .Values.app.canary.versionLabel | quote }}  # "v2"
+              value: {{ .Values.config.dashboardVersionCanary | default "v2" | quote }}  # "v2"
           readinessProbe:
             httpGet:
               path: {{ .Values.app.readinessProbe.path }}
