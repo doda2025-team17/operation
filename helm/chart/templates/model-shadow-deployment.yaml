@@ -45,10 +45,9 @@ spec:
                   name: {{ include "sms-app.fullname" . }}-config
                   key: MODEL_URL
             - name: DASHBOARD_VERSION
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ include "sms-app.fullname" . }}-config
-                  key: DASHBOARD_VERSION
+              value: "{{ .Values.modelService.shadow.versionLabel }}"
+            - name: SHADOW_MODE
+              value: "true"
           {{- if .Values.modelService.volume.enabled }}
           volumeMounts:
             - name: shared-models
