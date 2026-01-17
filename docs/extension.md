@@ -64,7 +64,7 @@ Ultimately, we want our extension to go beyond our specific project to address a
 
 ### 2.2. High-Level Design
 
-The proposed extension introduces a centralized, declarative release architecture that restructures the current workflow around a single deployment control plane. The design establishes the `operation` repository as the deployment control plane, with the `app` and `model-service` repositories serving as specialized artifact producers. This architecture follows the GitOps principle of having a "single source of truth" for deployment state [4], while still maintaining a clear separation of concerns.
+The proposed extension introduces a centralized, declarative release architecture that restructures the current workflow around a single deployment control plane. The design establishes the `operation` repository as the deployment control plane, with the `app` and `model-service` repositories serving as specialized artifact producers. This architecture follows the GitOps principle of having a "single source of truth" for deployment state [4], and is inspired by cross-repository CI/CD patterns documented in industry literature [5], which show how GitHub Actions can coordinate workflows across independent repositories while maintaining separation of concerns.
 
 At the core of the design, the `operation` repository becomes the authoritative source of truth for the deployment state. This means that rather than developers having to manually coordinate releases across repositories, `operation` declaratively specifies which versions of `app` and `model-service` should run in each environment. Furthermore, the `app` and `model-service` repositories are conceptually reframed as **artifact producers**. Their responsibility ends at producing versioned, immutable build artifacts. Then, once the artifacts are published, deployment is influenced exclusively by the changes to the declarative state in the `operation` repository.
 
@@ -85,7 +85,7 @@ The architecture we have presented is a generalizable pattern for multi-reposito
 
 The proposed architecture directly addresses each negative impact identified in [Section 1.3](#13-negative-impacts) through three improvements:
 
-First, it creates an automatic and reliable way of tracking what is deployed where. In the current setup, determining which versions are running requires checking multiple locations and takes a significant amount of time. Our proposed solution makes the `operation` repository the single source of truth, with every deployment recorded in Git history, preventing drift [5] between the deployed and specified versions. This provides an immediate answer to the question "what's running?" and therefore helps solve the reproducibility issue noted in [Section 1.2](#12-the-release-engineering-problem).
+First, it creates an automatic and reliable way of tracking what is deployed where. In the current setup, determining which versions are running requires checking multiple locations and takes a significant amount of time. Our proposed solution makes the `operation` repository the single source of truth, with every deployment recorded in Git history, preventing drift [6] between the deployed and specified versions. This provides an immediate answer to the question "what's running?" and therefore helps solve the reproducibility issue noted in [Section 1.2](#12-the-release-engineering-problem).
 
 Second, it removes the coordination bottlenecks that slow down working in parallel. Currently, developers must manually synchronize their work across repositories, which creates delays. The event-driven solution allows developers to work in parallel: they can independently build and test their changes, while the deployment control plane automatically detects compatible versions and orchestrates coordinated releases. This eliminates the sequential blocking tasks described in [Section 1.3](#13-negative-impacts) and enables true independent development.
 
@@ -96,37 +96,133 @@ Additionally, the solution introduces scientific experiment management for Assig
 
 ## 3. Implementation Plan
 
+This section describes how the proposed cross-repository CI/CD extension could realistically be implemented. The plan is divided into three phases, which incrementally improve the existing design and can be validated in isolation:
+
+1. Standardizing image building
+2. Establishing the deployment control plane
+3. Integrating the experiment configuration as declarative state
+
+
 ### 3.1. Standardize Image Building
+
+The first phase of the implementation standardizes how Docker images are built and published in the `app` and `model-service` repositories, replacing the current manual steps with fully automated CI workflows, whose sole responsibility is producing immutable artifacts, as described in Figure 3. 
+
+<!-- To be created:
+<figure> 
+  <img src="images/extension/image-build-workflow.png" alt="Automated image build pipeline"> 
+  <figcaption><b>Figure 3:</b> Automated Artifact Production Pipeline for the <code>app</code> and <code>model-service</code> Repositories.</figcaption> 
+</figure> -->
+
+Each repository is extended with a Github Actions workflow that triggers on well-defined versioning events, such as pushes to the `main` branch or on annotated Git tags, as described in the assignment requirements. The pipeline is responsible for compiling the application, running any test suites, building a Docker image, and publishing that image to the Github Container Registry. It is important to note that the workflow does not contain any deployment logic, nor does it interact with the Kubernetes cluster of the `operation` repository. They are limited strictly to artifact production, as imagined in [Section 2.2](#22-high-level-design).
+
+Versioning follows the conventions already established in the project. Stable releases are produced only when an explicit semantic version tag is pushed, while feature branches may produce pre-release images for testing purposes. Each published image is immutable, triggers a notification to the `operation` repository signaling that new artifacts are available, and, for traceability purposes, includes standard OCI metadata labels [7] that link it to its source repository, commit hash, build timestamp, and version tag.
+
+Once this phase is complete, all manual `docker build` and `docker push` steps are eliminated, and every container image becomes immutable, versioned, and reproducible.
 
 ### 3.2. Create a Deployment Control Plane
 
+The second phase (Figure 4) introduces the central element of the proposed extension, namely the Deployment Control Plane, implemented within the `operation` repository, that becomes the authoritative source of truth on deployment-relevant information.
+
+<!-- To be created:
+<figure> 
+  <img src="images/extension/reconciliation-flow.png" alt="GitOps reconciliation loop"> <figcaption><b>Figure 4:</b> GitOps Reconciliation Loop between the <code>operation</code> repository and the Kubernetes Cluster.</figcaption> 
+</figure> -->
+
+We achieve this by adding explicit environment directories, such as staging, production, and experiment, to the `operation` repository. Each should contain configuration files that declare which versions of `app` and `model-service` images are expected to run, along with any environment-specific Helm commands. These files describe what the desired deployment state should be and can be versioned through Git like any other code. As a result, Git history becomes a complete record of every deployment decision and can be inspected whenever necessary.
+
+We further introduce a GitOps controller, such as FluxCD [8] or ArgoCD [9], into the Kuberneted cluster during the provisioning phase by extending the existing playbooks. Once installed, the controller continuously monitors the `operation` repository and reconciles the running cluster state against the declared configuration. Any difference is automatically corrected. Conversely, any change to an environment configuration through a Git commit, such updating an image tag or modifying Helm values, results in a corresponding update to the cluster.
+
+By making the operation repository the single source of truth, this phase directly addresses the reproducibility and traceability problems identified in [Section 1.2](#12-the-release-engineering-problem). Rollbacks become trivial Git operations, deployment history is inherently auditable, and the question of “what is currently running” can be answered deterministically by inspecting the repository state.
+
+
 ### 3.3. Integrate the Experiment Configuration into the Project
+
+The last phase extends the Deployment Control Plane to support experimentation in a structured and reproducible way. In the current workflow, experiments require a series of manual configuration steps and are difficult to reproduce once completed. This phase addresses that issue by treating experiment setups as declarative deployment variants, as seen in Figure 5.
+
+<!-- To be created:
+<figure> 
+  <img src="images/extension/experiment-lifecycle.png" alt="Declarative experiment lifecycle"> 
+  <figcaption><b>Figure 5:</b> Lifecycle of an Experiment Managed through the Deployment Control Plane.</figcaption> 
+</figure> -->
+
+Experiments are represented as environment-specific configuration files within the `operation` repository. Each experiment file explicitly defines the image versions under test, along with the necessary traffic routing strategy and any other relevant Istio settings, such as canary or A/B traffic splits. For example, a canary experiment could be represented as a Helm values override combined with an Istio VirtualService that routes a fixed percentage of traffic to a new model version. Because these configurations are applied through the same GitOps reconciliation mechanism as in [Section 3.2](#32-create-a-deployment-control-plane), experiments are also guaranteed to be traceable, auditable, and reversible.
+
+Observability can be integrated using the existing monitoring stack. Metrics are collected through Prometheus, and Grafana dashboards are defined as version-controlled artifacts, which means the experiment results can be consistently inspected across runs. The analysis of any outcomes can be performed outside of the deployment pipeline itself, while still being traceable to the exact deployment state that produced them.
 
 
 ## 4. Experiment Design
 
+This section describes how the impact of the proposed cross-repository CI/CD extension can be evaluated in a structured and reproducible manner. The goal of the experiment is to demonstrate, within the scope of this project, that the proposed changes measurably improve efficiency and reproducibility when compared to the existing manual workflow described in [Section 1.1](#11-current-state).
+
 ### 4.1. Hypothesis
+
+Formally stated, we make the following hypotheses:
+
+**1. H1 (Deployment Efficiency):** Introducing an automated, GitOps-based CI/CD pipeline reduces the time required to deploy a new application version compared to the current manual process.
+
+**2. H2 (Reproducibility):**  Deployment states managed declaratively through the operation repository can be reliably reproduced from version control without relying on undocumented manual steps.
+
+**3. H3 (Operational Robustness):** Automating release coordination across repositories reduces configuration mismatches and deployment-related errors.
+
+These hypotheses directly correspond to the shortcomings identified in Sections [1.2](#12-the-release-engineering-problem) and [1.3](#13-negative-impacts).
 
 ### 4.2. Metrics
 
+To test our hypotheses, we define the following set of measurable and observable metrics:
+
+**1. Deployment Lead Time**, as measured by the time taken between pushing a change to a repository and the application becoming accessible at `http://localhost:8080`. This metric captures the operational impact of our automation and represents the “change lead time” concept emphasized by DORA [3].
+
+**2. Deployment Reproducibility**, as evaluated by trying to recreate a previously deployed state using only the Git history of the `operation` repository. It is considered successful if the cluster reaches the correct declared image versions and routing configuration without needing any undocumented manual intervention. 
+
+**3. Deployment Error Frequency**, tracked qualitatively by recording any time a deployment needs any manual intervention, such as fixing an image tag mismatch or incorrect Helm values.
+
+<!-- To be created:
+<figure> 
+  <img src="images/extension/experiment-metrics.png" alt="Experiment Metrics"> 
+  <figcaption><b>Figure 6:</b> Metrics used for the Extension Experiment.</figcaption> 
+</figure> -->
+
+
 ### 4.3. Experiment Methodology
+
+We compare the "before" and "after" states of the project based on the metrics in [Section 4.2](#42-metrics).
 
 #### Step 1: Establish a Baseline
 
+Using the current workflow, the application is deployed multiple times following the steps described in [Section 1.1](#11-current-state). For each run, the *deployment lead time* is recorded, and any *manual corrections or errors* are noted. In addition, one previously executed experiment is manually reproduced to check its *reproducibility* at the present time.
+
 #### Step 2: Enable the CI/CD Pipeline
+
+We enable the extension and repeat the same deployment process. Image versions are updated exclusively through commits to the `operation` repository, and deployments are triggered by the reconciliation mechanism rather than manual Helm commands.
 
 #### Step 3: Analysis
 
+The results of both phases are compared qualitatively and quantitatively, based on the metrics recorded in the previous steps.
+
 ### 4.4. Visualizations of the Results
+
+The results of the experiment can be visualized using the existing monitoring stack introduced in Assignments 3 and 4. Figure 7 presents an example way in which they can be illustrated. 
+
+<!-- To be created:
+<figure> 
+  <img src="images/extension/experiment-visualization.png" alt="Experiment Visualization"> 
+  <figcaption><b>Figure 7:</b> Example Visualizations that can be used for the Extension Experiment.</figcaption> 
+</figure> -->
+
+For instance, time-series graphs in Grafana could show the *deployment lead time* before and after automation. *Deployment reproducibility* could be visualized through the reduction of configuration drift, showing the transition from partially inconsistent states to a fully declarative and synchronized deployment state. Finally, *operational robustness* could be illustrated by experiment success rates, comparing the number of manual deployments that need some human intervention with the number of fully automated runs that complete without errors.
+
+These visualizations support the central claim of the extension, which is that deployment state becomes observable, traceable, and reproducible once it is managed declaratively.
 
 
 ## 5. Discussion
 
 ### 5.1. Assumptions
 
-### 5.2. Potential Downsides
+### 5.2. Impact of Changes upon the Project
 
-### 5.3. Why Benefits Outweigh the Risks
+### 5.3. Potential Downsides
+
+### 5.4. Why Benefits Outweigh the Risks
 
 
 ## 6. References
@@ -138,8 +234,15 @@ Additionally, the solution introduces scientific experiment management for Assig
 
 [4] OpenGitOps, “OpenGitOps,” *OpenGitOps*, [Online]. Available: https://opengitops.dev/
 
-[5] A. Totin, “Configuration drift: The pitfall of local machines,” *JetBrains Blog*, 2025. [Online]. Available: https://blog.jetbrains.com/codecanvas/2025/08/configuration-drift-the-pitfall-of-local-machines/
+[5] I. Mujagic, "Efficient Cross-Repository CI/CD: Running Targeted Tests with GitHub Actions," *The Green Report Blog*, Sep. 28, 2023. [Online]. Available: https://www.thegreenreport.blog/articles/efficient-cross-repository-cicd-running-targeted-tests-with-github-actions/efficient-cross-repository-cicd-running-targeted-tests-with-github-actions.html.
 
+[6] A. Totin, “Configuration drift: The pitfall of local machines,” *JetBrains Blog*, 2025. [Online]. Available: https://blog.jetbrains.com/codecanvas/2025/08/configuration-drift-the-pitfall-of-local-machines/
+
+[7] Open Container Initiative, *OCI Image Format Specification*, v1.0.2, 2021. [Online]. Available: https://github.com/opencontainers/image-spec/blob/main/annotations.md.
+
+[8] Flux Project Authors, "Flux - the GitOps family of projects," *Flux Documentation*, 2025. [Online]. Available: https://fluxcd.io/.
+
+[9] Argo Project Authors, "Argo CD - Declarative GitOps CD for Kubernetes," *Argo Project Documentation*, 2025. [Online]. Available: https://argoproj.github.io/cd/.
 
 ## 7. Declarative Use of Generative AI
 Chatbots (ChatGPT and Claude) were used to rephrase text and improve style, structure, and grammar. They were not used to generate new content, but rather to improve the overall clarity, consistency, and readability of the report. Additionally to LLMs, Grammarly has been used to correct any grammar mistakes.
