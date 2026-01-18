@@ -178,6 +178,8 @@ No work.
 - Made a cache feature for App for CE as part of the additional feature requirement
 
 ### Kristian
+- Improved the Shadow Launch: PR [#64](https://github.com/doda2025-team17/operation/pull/64).
+- Added Shadow Launch tag: PR [#15](https://github.com/doda2025-team17/model-service/pull/15).
 
 ### Ana
 
