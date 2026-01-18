@@ -190,6 +190,8 @@ No work.
 
 ### Rebecca
 
+- Wrote the second part of the Extension Proposal in PR [#66](https://github.com/doda2025-team17/operation/pull/66)
+
 ### Arnav
 
 ### Kristian
