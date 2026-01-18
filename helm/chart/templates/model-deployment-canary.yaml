@@ -38,10 +38,7 @@ spec:
                   name: {{ include "sms-app.fullname" . }}-config
                   key: MODEL_URL
             - name: DASHBOARD_VERSION
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ include "sms-app.fullname" . }}-config
-                  key: DASHBOARD_VERSION
+              value: {{ .Values.config.dashboardVersionCanary | default "v2" | quote }}
           {{- if .Values.modelService.readinessProbe.tcpSocket }}
           readinessProbe:
             tcpSocket:
@@ -58,12 +55,12 @@ spec:
           {{- end }}
           {{- if .Values.modelService.volume.enabled }}
           volumeMounts:
-            - name: model-storage
-              mountPath: /app/models
+            - name: shared-models
+              mountPath: /models
           {{- end }}
       {{- if .Values.modelService.volume.enabled }}
       volumes:
-        - name: model-storage
+        - name: shared-models
           hostPath:
             path: {{ .Values.modelService.volume.hostPath }}
             type: DirectoryOrCreate
