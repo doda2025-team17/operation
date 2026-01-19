@@ -188,6 +188,9 @@ No work.
 
 ### Nicholas
 
+- Reviewed the shadow PR from Kristian.
+- Go through the PR's from the others.
+
 ## Week Q4.8 (Jan. 12 - 18)
 
 ### Rebecca
