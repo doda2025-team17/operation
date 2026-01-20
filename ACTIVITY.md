@@ -201,6 +201,9 @@ No work.
 - Wrote the second part of the Extension Proposal in PR [#66](https://github.com/doda2025-team17/operation/pull/66)
 
 ### Arnav
+- Reviewed shadow launch PR [64](https://github.com/doda2025-team17/operation/pull/64)
+- Updated canary version of app and model-service for CE [69](https://github.com/doda2025-team17/operation/pull/69)
+- Finished the first part of the CE documentation [70](https://github.com/doda2025-team17/operation/pull/70)
 
 ### Kristian
 
