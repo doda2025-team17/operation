@@ -13,10 +13,15 @@
    * [Assignment 1](#assignment-1)
    * [Assignment 2 - Kubernetes Infrastructure](#assignment-2---kubernetes-infrastructure)
    * [Assignment 3](#assignment-3)
+   * [Final Presentation Slides](#final-presentation-slides)
 
 # Operation
 
 This organization contains a machine learning-based SMS spam detection system with a web interface.
+
+# Final Presentation Slides
+
+View our project presentation slides: [Google Slides Presentation](https://docs.google.com/presentation/d/17BU4RHK-nm1WNdFNbpCrFNRYblft-hVfPCv5rCbB-lg/edit?usp=sharing)
 
 # Architecture Overview
 
