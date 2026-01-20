@@ -246,6 +246,12 @@ Another challenge is that some of the details of the deployment become less visi
 
 ### 5.4. Why Benefits Outweigh the Risks
 
+Despite the downsides mentioned in [Section 5.3](#53-potential-downsides), the benefits of the proposed extension clearly outweigh the risks within the context of this project. For one, deployments become more predictable and developers can rely on the system to produce the same outcome every time, without needing to remember sequences of manual steps. Rollbacks and experiment reproductions are similarly straightforward because every change is recorded in Git.
+
+The initial effort to set up the extension also pays off over time. Once the system is in place, developers will spend less time coordinating releases or fixing deployment errors, which lets them focus on developing more features. The extension also scales well. When adding a new service or experiment, the developers can simply follow the same pattern of artifact production and declarative deployment. This consistency reduces the cognitive load placed on the developer and makes the workflow easier to maintain.
+
+In short, the extension turns the current fragile and manual process into a reliable and transparent one. The risks are manageable and mostly upfront, while the benefits, that is, faster deployments, reproducibility, traceability, and scalability, persist over the lifetime of the project. For this reason, the advantages clearly outweigh the costs.
+
 
 ## 6. References
 [1] B. Beyer, C. Jones, J. Petoff, and N. R. Murphy, Eds., *Site Reliability Engineering: How Google Runs Production Systems*. Sebastopol, CA, USA: O’Reilly Media, 2016. [Online]. Available: https://sre.google/sre-book/table-of-contents/
