@@ -84,10 +84,163 @@ Core goals of the deployment:
 
 The overall architecture is shown in Figure 1.
 
-<figure>
-  <img src="images/deployment/deployment-architecture.jpeg" alt="SMS App Deployment Architecture">
-  <figcaption><b>Figure 1:</b> SMS App Deployment Architecture</figcaption>
-</figure>
+```mermaid
+---
+title: Figure 1 - SMS App Deployment Architecture
+---
+flowchart LR
+    subgraph User["User"]
+        Browser["User Browser<br/>sms-app.local<br/>sms-istio.local"]
+    end
+
+    subgraph Ingress["INGRESS LAYER"]
+        NGINX["NGINX Ingress<br/>sms-app.local<br/>192.168.56.95"]
+        Istio["Istio Gateway<br/>sms-istio.local<br/>192.168.56.96"]
+    end
+
+    subgraph AppService["APP SERVICE"]
+        AppV1["App v1 Stable<br/>sms-app-app<br/>Port 8080"]
+        AppV2["App v2 Canary<br/>sms-app-app-canary<br/>10% traffic"]
+        Sticky["Sticky Cookie:<br/>sms-app-version"]
+    end
+
+    subgraph ModelService["MODEL SERVICE"]
+        ModelV1["Model v1 Stable<br/>sms-app-model<br/>/predict endpoint"]
+        ModelV2["Model v2 Shadow<br/>sms-app-model-shadow<br/>Mirrored traffic only"]
+    end
+
+    subgraph Config["CONFIGURATION"]
+        ConfigMap["ConfigMap"]
+        Secret["Secret - SMTP"]
+    end
+
+    subgraph Monitoring["MONITORING - kube-prometheus-stack"]
+        Prometheus["Prometheus<br/>ServiceMonitors"]
+        AlertManager["AlertManager<br/>Email alerts"]
+        Grafana["Grafana<br/>Dashboards"]
+        PromRule["PrometheusRule"]
+    end
+
+    subgraph Storage["STORAGE"]
+        SharedStorage["Shared Model Storage<br/>/mnt/shared/models<br/>HostPath Volume"]
+    end
+
+    %% Request flows
+    Browser --> NGINX
+    Browser --> Istio
+    NGINX --> AppV1
+    Istio -->|"90%"| AppV1
+    Istio -->|"10%"| AppV2
+    Istio -.-> Sticky
+    AppV1 --> ModelV1
+    AppV2 --> ModelV1
+    ModelV1 -.->|"Mirror 10%"| ModelV2
+
+    %% Config flows
+    ConfigMap -.-> AppV1
+    ConfigMap -.-> AppV2
+    Secret -.-> AppV1
+    Secret -.-> AppV2
+
+    %% Metrics flows
+    AppV1 -.-> Prometheus
+    AppV2 -.-> Prometheus
+    ModelV1 -.-> Prometheus
+    Prometheus --> AlertManager
+    Prometheus --> Grafana
+    PromRule -.-> Prometheus
+
+    %% Storage flows
+    SharedStorage -.-> ModelV1
+    SharedStorage -.-> ModelV2
+
+    %% Styling
+    classDef stable fill:#d5e8d4,stroke:#82b366,stroke-width:2px
+    classDef canary fill:#e1d5e7,stroke:#9673a6,stroke-width:2px
+    classDef shadow fill:#f8cecc,stroke:#b85450,stroke-width:2px
+    classDef ingress fill:#ffe6cc,stroke:#d79b00,stroke-width:2px
+    classDef istioGw fill:#fff2cc,stroke:#d6b656,stroke-width:2px
+    classDef monitoring fill:#dae8fc,stroke:#6c8ebf,stroke-width:2px
+    classDef config fill:#d0e0e3,stroke:#76a5af,stroke-width:2px
+    classDef secret fill:#ead1dc,stroke:#c27ba0,stroke-width:2px
+    classDef storage fill:#fff2cc,stroke:#d6b656,stroke-width:2px
+    classDef user fill:#dae8fc,stroke:#6c8ebf,stroke-width:2px
+    classDef alert fill:#f4cccc,stroke:#cc0000,stroke-width:2px
+    classDef sticky fill:#fce5cd,stroke:#e69138,stroke-width:2px
+
+    class Browser user
+    class NGINX ingress
+    class Istio istioGw
+    class AppV1 stable
+    class AppV2 canary
+    class Sticky sticky
+    class ModelV1 stable
+    class ModelV2 shadow
+    class ConfigMap config
+    class Secret secret
+    class Prometheus,Grafana monitoring
+    class AlertManager alert
+    class PromRule config
+    class SharedStorage storage
+```
+
+The components divided by namespace are shown in Figure 2.
+
+```mermaid
+---
+title: Figure 2 - Namespace and Component Relationships
+---
+flowchart TB
+    subgraph external[" "]
+        Browser[("🌐 Browser")]
+    end
+
+    subgraph ingress-nginx["ingress-nginx namespace"]
+        NGINX["NGINX Ingress<br/>192.168.56.95<br/>sms-app.local"]
+    end
+
+    subgraph istio-system["istio-system namespace"]
+        IstioGW["Istio Gateway<br/>192.168.56.96<br/>sms-istio.local"]
+    end
+
+    subgraph sms-app["sms-app namespace"]
+        subgraph app["App Service (Spring Boot)"]
+            AppV1["sms-app-app<br/>v1 - Stable"]
+            AppV2["sms-app-app-canary<br/>v2 - Canary"]
+        end
+        subgraph model["Model Service (Python ML)"]
+            ModelV1["sms-app-model<br/>v1 - Production"]
+            ModelV2["sms-app-model-shadow<br/>v2 - Shadow"]
+        end
+        Storage[("HostPath<br/>/mnt/shared/models")]
+    end
+
+    subgraph monitoring["monitoring namespace"]
+        Prometheus["Prometheus"]
+        Grafana["Grafana<br/>grafana.local"]
+        Alertmanager["Alertmanager"]
+    end
+
+    Browser --> NGINX
+    Browser --> IstioGW
+    NGINX --> AppV1
+    IstioGW --> AppV1
+    IstioGW --> AppV2
+    AppV1 --> ModelV1
+    AppV2 --> ModelV1
+    ModelV1 -.-> ModelV2
+    ModelV1 --> Storage
+    ModelV2 --> Storage
+    AppV1 -.-> Prometheus
+    ModelV1 -.-> Prometheus
+    Prometheus --> Grafana
+    Prometheus --> Alertmanager
+
+    style ingress-nginx fill:#a6ffa1,stroke:#22c55e
+    style istio-system fill:#c6a1ff,stroke:#a855f7
+    style sms-app fill:#83e8fc,stroke:#3b82f6
+    style monitoring fill:#fcec83,stroke:#eab308
+```
 
 ---
 
@@ -241,22 +394,61 @@ Istio does not control this traffic. It is purely a standard HTTP ingress path.
 
 ## 6. Istio Traffic Management
 
-Requests sent to `sms-istio.local` pass through Istio:
+Requests sent to `sms-istio.local` pass through Istio depicted in Figure 3.
 
-**Browser → Istio Gateway → VirtualService → App Subset (v1/v2)**
+```mermaid
+---
+title: Figure 3 - Istio Traffic Management and Routing
+---
+flowchart TB
+    Browser[("Browser")]
 
-```bash
-User
-  | (Host: sms-istio.local)
-  v
-Istio IngressGateway (192.168.56.96)
-  |
-  v
-VirtualService (90/10 split)
-  |            \
-  v             v
-Subset v1       Subset v2
-(App stable)    (App canary)
+    subgraph routing["Ingress Layer"]
+        direction LR
+        NGINX["NGINX Ingress<br/>sms-app.local"]
+        Istio["Istio Gateway<br/>sms-istio.local"]
+    end
+
+    subgraph istio-routing["Istio Traffic Management"]
+        VS["VirtualService<br/>90/10 split"]
+        DR["DestinationRule<br/>sticky cookie: sms-app-version<br/>TTL: 3600s"]
+    end
+
+    subgraph app-tier["App Tier"]
+        AppV1["App v1 - Stable<br/>90% traffic"]
+        AppV2["App v2 - Canary<br/>10% traffic"]
+    end
+
+    subgraph model-tier["Model Tier"]
+        ModelVS["Model VirtualService<br/>mirror: 10%"]
+        ModelV1["Model v1<br/>Production"]
+        ModelV2["Model v2<br/>Shadow"]
+    end
+
+    Response[("Response to User")]
+
+    Browser -->|"Host: sms-app.local"| NGINX
+    Browser -->|"Host: sms-istio.local"| Istio
+
+    NGINX -->|"direct routing"| AppV1
+
+    Istio --> VS
+    VS --> DR
+    DR -->|"90%"| AppV1
+    DR -->|"10%"| AppV2
+
+    AppV1 --> ModelVS
+    AppV2 --> ModelVS
+
+    ModelVS -->|"serves response"| ModelV1
+    ModelVS -.->|"10% mirrored<br/>fire-and-forget"| ModelV2
+
+    ModelV1 --> Response
+    ModelV2 -.->|"discarded"| X["∅"]
+
+    style istio-routing fill:#c6a1ff,stroke:#a855f7
+    style app-tier fill:#8fabff,stroke:#3b82f6
+    style model-tier fill:#816fe3,stroke:#0ea5e9
 ```
 
 ### 6.1 90/10 Traffic Split
@@ -368,16 +560,60 @@ This means **a configurable percentage of real classification requests** are rep
 
 ## 8. Monitoring & Observability
 
-This is the representation of the metrics flow in the system:
+The representation of metrics flow in the system is depicted in Figure 4.
 
 ```mermaid
-graph LR
-    A[App /metrics] --> B[ServiceMonitor]
-    C[Model /metrics] --> D[ServiceMonitor]
-    B --> E[Prometheus]
-    D --> E
-    E --> F[Grafana Dashboard]
-    E --> G[AlertManager]
+---
+title: Figure 4 - Monitoring and Alerting Pipeline
+---
+flowchart LR
+    subgraph sms-app["sms-app namespace"]
+        App["App Service<br/>/actuator/prometheus"]
+        Model["Model Service<br/>/metrics"]
+    end
+
+    subgraph monitoring["monitoring namespace"]
+        subgraph scraping["Metric Collection"]
+            SM1["ServiceMonitor<br/>(app)"]
+            SM2["ServiceMonitor<br/>(model)"]
+        end
+
+        Prom["Prometheus"]
+
+        subgraph alerting["Alerting Pipeline"]
+            PR["PrometheusRule<br/>e.g. HighRequestRate > 15/min"]
+            AM["Alertmanager"]
+            AMC["AlertmanagerConfig<br/>email routing"]
+        end
+
+        subgraph visualization["Dashboards"]
+            Grafana["Grafana"]
+            D1["Operational<br/>Dashboard"]
+            D2["Experiment<br/>Dashboard"]
+        end
+    end
+
+    Email[("📧 Email<br/>Notifications")]
+
+    App --> SM1
+    Model --> SM2
+    SM1 --> Prom
+    SM2 --> Prom
+
+    Prom --> PR
+    PR -->|"alerts"| AM
+    AM --> AMC
+    AMC --> Email
+
+    Prom --> Grafana
+    Grafana --> D1
+    Grafana --> D2
+
+    style sms-app fill:#83e8fc,stroke:#3b82f6
+    style monitoring fill:#fcec83,stroke:#eab308
+    style scraping fill:#edba8a,stroke:#facc15
+    style alerting fill:#edba8a,stroke:#facc15
+    style visualization fill:#edba8a,stroke:#facc15
 ```
 
 Both app and model expose Prometheus metrics:
@@ -387,7 +623,6 @@ Both app and model expose Prometheus metrics:
 - `/actuator/prometheus`
 
 - Metrics include:
-
   - request counter
 
   - active requests gauge
@@ -401,7 +636,6 @@ Both app and model expose Prometheus metrics:
 - `/metrics`
 
 - Includes:
-
   - inference latency histogram
 
   - request counters
@@ -430,9 +664,7 @@ Two dashboards are deployed:
 1. **Operational Metrics Dashboard**
 
 2. **Experiment Comparison Dashboard**
-
    - Shows v1 vs v2:
-
      - throughput
 
      - error %
