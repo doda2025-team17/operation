@@ -215,8 +215,16 @@ These visualizations support the central claim of the extension, which is that d
 
 
 ## 5. Discussion
+This section is a reflection upon the proposed extension and its trade-offs.
 
 ### 5.1. Assumptions
+
+The extension relies on several important assumptions. First, it assumes that all deployable components can be packaged as immutable artifacts, specifically container images, and that these artifacts are versioned consistently across repositories. This assumption should be true in modern microservice architectures, but it may not hold in systems that rely on mutable runtime configuration or shared state outside of version control.
+
+Second, the design assumes that Git is treated as the authoritative source of truth for deployment state and that all deployment-relevant changes are made through commits to the `operation` repository. This relies on the developers themselves maintaining a strictly disciplined workflow, a constraint is intentional and consistent with GitOps principles [4].
+
+Finally, the extension is designed under the assumption that the infrastructure itself does not change frequently. In this project, the Kubernetes cluster, networking stack, and supporting services are provisioned only once using Vagrant and Ansible and then remain largely static during normal operation. Because of this, the extension deliberately focuses on automating application deployments (container images, Helm values, Istio routing) rather than automating the creation or scaling of the infrastructure. However, in environments where the infrastructure itself changes frequently, the extension would not be sufficient on its own and additional steps would be required to automate infrastructural changes alongside application releases.
+
 
 ### 5.2. Impact of Changes upon the Project
 
@@ -243,6 +251,7 @@ These visualizations support the central claim of the extension, which is that d
 [8] Flux Project Authors, "Flux - the GitOps family of projects," *Flux Documentation*, 2025. [Online]. Available: https://fluxcd.io/.
 
 [9] Argo Project Authors, "Argo CD - Declarative GitOps CD for Kubernetes," *Argo Project Documentation*, 2025. [Online]. Available: https://argoproj.github.io/cd/.
+
 
 ## 7. Declarative Use of Generative AI
 Chatbots (ChatGPT and Claude) were used to rephrase text and improve style, structure, and grammar. They were not used to generate new content, but rather to improve the overall clarity, consistency, and readability of the report. Additionally to LLMs, Grammarly has been used to correct any grammar mistakes.
