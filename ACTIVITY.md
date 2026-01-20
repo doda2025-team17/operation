@@ -181,7 +181,6 @@ No work.
 
 ### Kristian
 
-- Improved the Shadow Launch: PR [#64](https://github.com/doda2025-team17/operation/pull/64).
 - Added Shadow Launch tag: PR [#15](https://github.com/doda2025-team17/model-service/pull/15).
 
 ### Ana
@@ -203,6 +202,8 @@ No work.
 ### Arnav
 
 ### Kristian
+- Improved the Shadow Launch: PR [#64](https://github.com/doda2025-team17/operation/pull/64).
+- Reviewed PR [#21](https://github.com/doda2025-team17/app/pull/21) and PR [#22](https://github.com/doda2025-team17/app/pull/22).
 
 ### Ana
 
