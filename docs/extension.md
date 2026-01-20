@@ -228,7 +228,16 @@ Finally, the extension is designed under the assumption that the infrastructure 
 
 ### 5.2. Impact of Changes upon the Project
 
+On a practical level, the extension makes normal releases much easier. Developers no longer have to coordinate steps across multiple repositories or manually run a lot of complex commands. They can update the deployment simply by changing the declarative configuration in the `operation` repository and letting the system apply it automatically. This reduces deployment time and makes sure that each deployment behaves consistently, which, in turn, makes the process more reliable.
+
+Conceptually, the extension changes how deployment is thought about in the project. It goes from a sequence of actions to be executed correctly to a problem of managing state, where the desired system configuration is declared and enforced automatically. The `app` and `model-service` repositories handle building the artifacts, while the `operation` repository decides which versions run where and when. This makes the deployment state explicit and easy to inspect, instead of something that exists only as a side effect of executing commands.
+
+This change is particularly significant for the experimentation part of the project. The experiment configurations are now treated as versioned deployment states. Each experiment can be reproduced exactly, and results can be compared reliably across runs. The project is clearly improved by moving from manually performing experiments to defining them as clear, traceable specifications, which improves both reliability and the scientific rigor of the workflow.
+
+
 ### 5.3. Potential Downsides
+
+
 
 ### 5.4. Why Benefits Outweigh the Risks
 
