@@ -148,6 +148,7 @@ No work.
 - Reviewed Additional Use Case PR.
 
 ### Arnav
+
 - Added and enabled variables to work on the Continuous Experimentation part of the assignment and update pom versions in app and model-service
 - Reviewed multiple PRs
 
@@ -171,13 +172,15 @@ No work.
 ### Rebecca
 
 - Wrote the first part of the Extension Proposal (~2000 words) in PR [#60](https://github.com/doda2025-team17/operation/pull/60)
-- Reviewed the Deployment Documentation PR 
+- Reviewed the Deployment Documentation PR
 
 ### Arnav
+
 - Worked on making two versions for both App and Model-service
 - Made a cache feature for App for CE as part of the additional feature requirement
 
 ### Kristian
+
 - Improved the Shadow Launch: PR [#64](https://github.com/doda2025-team17/operation/pull/64).
 - Added Shadow Launch tag: PR [#15](https://github.com/doda2025-team17/model-service/pull/15).
 
@@ -203,6 +206,8 @@ No work.
 
 ### Ana
 
+- Reviewed extension PR [#66](https://github.com/doda2025-team17/operation/pull/66)
+
 ### Nicholas
 
 ## Week Q4.9 (Jan. 19 - 25)
@@ -214,6 +219,8 @@ No work.
 ### Kristian
 
 ### Ana
+
+- Improved graphs inside deployment documentation [#73](https://github.com/doda2025-team17/operation/pull/73)
 
 ### Nicholas
 
