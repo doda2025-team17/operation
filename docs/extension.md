@@ -237,6 +237,11 @@ This change is particularly significant for the experimentation part of the proj
 
 ### 5.3. Potential Downsides
 
+Firstly, the extension adds some complexity to the project. Modifying the existing GitHub Actions workflows, setting up a GitOps controller, and coordinating across repositories requires an initial investment of time and effort. For a small team, this workload might feel heavy compared to the manual process they are replacing, even though it will pay off once the system is running.
+
+There is also a risk that one mistake in the `operation` repository affects all the environments at once. Where before, a manual error might only impact a single deployment, with automation, a misconfigured image tag or Helm value could propagate widely through the codebase. We can reduce the risk of this through version control and the ability to roll back changes, but testing and code review will still become more important than before.
+
+Another challenge is that some of the details of the deployment become less visible. Automation handles many of the steps that developers used to perform manually, which is a benefit in terms of reliability and speed, but it can make it harder for new team members to understand exactly what is happening in the cluster. Good documentation and observability will become necessary to ensure that the system remains transparent and maintainable.
 
 
 ### 5.4. Why Benefits Outweigh the Risks
