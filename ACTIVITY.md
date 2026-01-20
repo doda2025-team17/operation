@@ -217,6 +217,10 @@ No work.
 
 ### Nicholas
 
+- Work on the Final Presentation
+- Updated the readme.md file
+- Reviewed PR [#73]
+
 ## Week Q4.10 (Jan. 26 - 30)
 
 ### Rebecca
