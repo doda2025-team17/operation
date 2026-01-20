@@ -190,7 +190,7 @@ No work.
 
 ### Nicholas
 
-- Reviewed the shadow PR from Kristian.
+- Reviewed the shadow PR from Kristian and added a small change PR [#64](https://github.com/doda2025-team17/operation/pull/64/commits/289cb821ade0c6eca518e786d1b3a51ff5a6df93.)
 - Go through the PR's from the others.
 
 ## Week Q4.8 (Jan. 12 - 18)
