@@ -11,25 +11,26 @@ The project is divided into three independent repositories, each serving a disti
   <figcaption><b>Figure 1:</b> Current State Deployment Workflow.</figcaption>
 </figure>
 
-The current workflow is a mostly manual process, illustrated in **Figure 1**. First, a developer makes a change in the codebase. Then, they manually build the `app` and `model-service` repositories, and they push the resulting images to the GitHub Container Registry (GHCR). 
+The current workflow is a mostly manual process, illustrated in **Figure 1**. First, a developer makes a change in the codebase. Then, they manually build the `app` and `model-service` repositories, and they push the resulting images to the GitHub Container Registry (GHCR).
 
 This manual image building and pushing process follows our established versioning conventions: for stable releases, images are tagged with semantic versions like `v1.0.1`, while for feature branches, we use pre-release tags such as `v1.2.3-feature-x-20251217-123456`. However, there is no automated mechanism to propagate these version tags to the `operation` repository. Instead, a developer must manually navigate to the Helm chart's `values.yaml` file, update both the `app.image.tag` and `modelService.image.tag` fields with the exact versions that have just been pushed to GHCR, commit this change, and then execute `helm upgrade --install` commands against the Kubernetes cluster.
 
-Before any deployment can occur, the infrastructure must be provisioned. A user must manually start the Virtual Machines via `vagrant up`, which triggers the Ansible playbooks to automatically provision the full Kubernetes cluster stack, including the Flannel CNI, MetalLB load balancer, NGINX Ingress Controller, and Istio service mesh. Once provisioned, the user must export the `KUBECONFIG` environment variable pointing to the generated configuration file and manually build Helm dependencies with `helm dependency build`. 
+Before any deployment can occur, the infrastructure must be provisioned. A user must manually start the Virtual Machines via `vagrant up`, which triggers the Ansible playbooks to automatically provision the full Kubernetes cluster stack, including the Flannel CNI, MetalLB load balancer, NGINX Ingress Controller, and Istio service mesh. Once provisioned, the user must export the `KUBECONFIG` environment variable pointing to the generated configuration file and manually build Helm dependencies with `helm dependency build`.
 
 Afterwards, they must complete the multi-stage Helm deployment process: first, install a basic release, then manually create the Kubernetes Secrets (such as SMTP credentials), and finally upgrade the release with additional configurations for monitoring, alerting, or Istio features. In the end, the end user must manually set up port forwarding via `kubectl port-forward` before the application becomes accessible at `http://localhost:8080`.
+
 
 ### 1.2. The Release Engineering Problem
 
 The workflow described in [Section 1.1](#11-current-state) is highly fragmented and inconvenient. It represents, essentially, a problem regarding coordination and automation, where the separation of concerns that was so useful for developing the three repositories becomes a liability during the actual deployment of the application due to the absence of an integrated release mechanism. This places an excessive cognitive and operational burden on the developer and introduces opportunities for human error.
 
-Furthermore, this can be categorized as a release engineering problem. In Google's Site Reliability Engineering (SRE) model, release engineering is concerned with designing automated, reproducibile, and auditable release processes that minimize manual intervention and operational toil [1]. The current workflow violates these principles in several ways.
+Furthermore, this can be categorized as a release engineering problem. In Google's Site Reliability Engineering (SRE) model, release engineering is concerned with designing automated, reproducible, and auditable release processes that minimize manual intervention and operational toil [1]. The current workflow violates these principles in several ways.
 
 Firstly, versioning and propagating images across repositories is a manual process prone to human errors. Developers must independently build and push the `app` and `model-service` images, then update the `values.yaml` in the `operation` repository before running Helm commands. This step has a high risk of accidentally mismatching the versions of the cluster and the source repositories, which reduces reliability and increases the so-called "operational toil", defined in Google's SRE model as manual, repetitive work that scales linearly with system growth [1].
 
 Secondly, orchestrating the deployment of the application is a fragmented process across repositories. Helm releases, secret management, and Istio configuration all require sequential manual actions. There is no central, automated control plane for coordinating these steps, which increases the "cognitive load" of the developer [2] and slows down the release process. Each manual intervention is a potential point of failure and contradicts the SRE principle of minimizing operational toil through automation [1].
 
-Finally, the workflow does not provide adequate reproducibility, nor traceability. The DORA research program identifies "change lead time" as an important metric for DevOps performance, requiring clear tracking of when changes move from code to production [3]. However, our process lacks the traceability to measure this metric and the reproducibility to validate it. Currently, it is difficult to determine which versions of `app` and `model-service` are running in a given environment solely from the repository history - there is no single source of truth, a fundamental GitOps principle [4]. This deficiency makes rollbacks unreliable and reproducing an experiment impossible, as recreating a specific deployment state (such as "experiment X with `app v1.2.3`, `model-service v2.0.1`, and 90/10 canary routing") requires manual - and often literal - detective work on the tester's side, along with coordination across repositories. This violates the release engineering principle that deployments should be both reproducible (exactly recreatable) and auditable (clearly traceable).
+Finally, the workflow does not provide adequate reproducibility or traceability. The DORA research program identifies "change lead time" as an important metric for DevOps performance, requiring clear tracking of when changes move from code to production [3]. However, our process lacks the traceability to measure this metric and the reproducibility to validate it. Currently, it is difficult to determine which versions of `app` and `model-service` are running in a given environment solely from the repository history - there is no single source of truth, a fundamental GitOps principle [4]. This deficiency makes rollbacks unreliable and reproducing an experiment impossible, as recreating a specific deployment state (such as "experiment X with `app v1.2.3`, `model-service v2.0.1`, and 90/10 canary routing") requires manual - and often literal - detective work on the tester's side, along with coordination across repositories. This violates the release engineering principle that deployments should be both reproducible (exactly recreatable) and auditable (clearly traceable).
 
 What we have identified is fundamentally a release engineering problem because it affects the systematic building and deploying of software. The issues extend beyond our project to a general pattern in multi-repository microservice architectures, making the solution we will present broadly applicable.
 
@@ -59,12 +60,12 @@ Our vision is to develop a unified release engineering framework that transforms
 
 5. The entire system achieves deterministic traceability from code commit to running workload, which would enable precise measurement of DORA metrics like "change lead time" [3] and provide clear audit trails for security requirements.
 
-Ultimately, we want our extension to go beyond our specific project to address a common release engineering pattern in microservices architectures, namely how to coordinate the deployment of independent services. We wish to design a model applicable to any team facing similar challenges across service boundaries.
+Ultimately, we want our extension to go beyond our specific project to address a common release engineering pattern in microservices architectures, namely, how to coordinate the deployment of independent services. We wish to design a model applicable to any team facing similar challenges across service boundaries.
 
 
 ### 2.2. High-Level Design
 
-The proposed extension introduces a centralized, declarative release architecture that restructures the current workflow around a single deployment control plane. The design establishes the `operation` repository as the deployment control plane, with the `app` and `model-service` repositories serving as specialized artifact producers. This architecture follows the GitOps principle of having a "single source of truth" for deployment state [4], and is inspired by cross-repository CI/CD patterns documented in industry literature [5], which show how GitHub Actions can coordinate workflows across independent repositories while maintaining separation of concerns.
+The proposed extension introduces a centralized, declarative release architecture that restructures the current workflow around a single deployment control plane. The design establishes the `operation` repository as the deployment control plane, with the `app` and `model-service` repositories serving as specialized artifact producers. This architecture follows the GitOps principle of having a "single source of truth" for deployment state [4], and is inspired by cross-repository CI/CD patterns documented in industry literature [5] [6], which show how GitHub Actions can coordinate workflows across independent repositories while maintaining separation of concerns.
 
 At the core of the design, the `operation` repository becomes the authoritative source of truth for the deployment state. This means that rather than developers having to manually coordinate releases across repositories, `operation` declaratively specifies which versions of `app` and `model-service` should run in each environment. Furthermore, the `app` and `model-service` repositories are conceptually reframed as **artifact producers**. Their responsibility ends at producing versioned, immutable build artifacts. Then, once the artifacts are published, deployment is influenced exclusively by the changes to the declarative state in the `operation` repository.
 
@@ -74,8 +75,11 @@ At the core of the design, the `operation` repository becomes the authoritative 
 </figure>
 
 **Figure 2** illustrates the proposed architecture, which we have divided into three separate layers:
-1. **Artifact Production Layer** (`app` and `model-service`). These repositories automatically build and publish versioned Docker images to GHCR when code changes are committed. Each maintains independent CI pipelines and publishes a notification when the artifacts are ready. 
-2. **Deployment Control Plane** (`operation`). This central repository contains declarative environment configurations that specify exactly which artifact versions should run in each environment (staging, production, experiment). It serves as the single source of truth for deployment state, and can be configured by the user if desired.
+
+1. **Artifact Production Layer** (`app` and `model-service`). These repositories automatically build and publish versioned Docker images to GHCR when code changes are committed. Each maintains an independent CI pipeline and publishes a notification when the artifacts are ready.
+
+2. **Deployment Control Plane** (`operation`). This central repository contains declarative environment configurations that specify exactly which artifact versions should run in each environment (staging, production, experiment). It serves as the single source of truth for the deployment state, and can be configured by the user if desired.
+
 3. **Reconciliation Layer**. Automated workflows constantly check if the required artifacts are available, then synchronize the declared state with the running Kubernetes cluster using Helm and Istio. Any change to the declared state is traceable, reversible, and auditable.
 
 The architecture we have presented is a generalizable pattern for multi-repository microservices deployments. It scales horizontally as new services are added, with each new repository following the same artifact-producer interface. As a result, any organization with separate repositories for different services can adopt this model to coordinate releases.
@@ -85,7 +89,7 @@ The architecture we have presented is a generalizable pattern for multi-reposito
 
 The proposed architecture directly addresses each negative impact identified in [Section 1.3](#13-negative-impacts) through three improvements:
 
-First, it creates an automatic and reliable way of tracking what is deployed where. In the current setup, determining which versions are running requires checking multiple locations and takes a significant amount of time. Our proposed solution makes the `operation` repository the single source of truth, with every deployment recorded in Git history, preventing drift [6] between the deployed and specified versions. This provides an immediate answer to the question "what's running?" and therefore helps solve the reproducibility issue noted in [Section 1.2](#12-the-release-engineering-problem).
+First, it creates an automatic and reliable way of tracking what is deployed where. In the current setup, determining which versions are running requires checking multiple locations and takes a significant amount of time. Our proposed solution makes the `operation` repository the single source of truth, with every deployment recorded in Git history, preventing drift [7] between the deployed and specified versions. This provides an immediate answer to the question "what's running?" and therefore helps solve the reproducibility issue noted in [Section 1.2](#12-the-release-engineering-problem).
 
 Second, it removes the coordination bottlenecks that slow down working in parallel. Currently, developers must manually synchronize their work across repositories, which creates delays. The event-driven solution allows developers to work in parallel: they can independently build and test their changes, while the deployment control plane automatically detects compatible versions and orchestrates coordinated releases. This eliminates the sequential blocking tasks described in [Section 1.3](#13-negative-impacts) and enables true independent development.
 
@@ -100,37 +104,38 @@ This section describes how the proposed cross-repository CI/CD extension could r
 
 1. Standardizing image building
 2. Establishing the deployment control plane
-3. Integrating the experiment configuration as declarative state
+3. Integrating the experiment configuration as a declarative state
 
 
 ### 3.1. Standardize Image Building
 
-The first phase of the implementation standardizes how Docker images are built and published in the `app` and `model-service` repositories, replacing the current manual steps with fully automated CI workflows, whose sole responsibility is producing immutable artifacts, as described in Figure 3. 
+The first phase of the implementation standardizes how Docker images are built and published in the `app` and `model-service` repositories, replacing the current manual steps with fully automated CI workflows, whose sole responsibility is producing immutable artifacts, as described in Figure 3.
 
 <!-- To be created:
-<figure> 
-  <img src="images/extension/image-build-workflow.png" alt="Automated image build pipeline"> 
-  <figcaption><b>Figure 3:</b> Automated Artifact Production Pipeline for the <code>app</code> and <code>model-service</code> Repositories.</figcaption> 
+<figure>
+  <img src="images/extension/image-build-workflow.png" alt="Automated image build pipeline">
+  <figcaption><b>Figure 3:</b> Automated Artifact Production Pipeline for the <code>app</code> and <code>model-service</code> Repositories.</figcaption>
 </figure> -->
 
-Each repository is extended with a Github Actions workflow that triggers on well-defined versioning events, such as pushes to the `main` branch or on annotated Git tags, as described in the assignment requirements. The pipeline is responsible for compiling the application, running any test suites, building a Docker image, and publishing that image to the Github Container Registry. It is important to note that the workflow does not contain any deployment logic, nor does it interact with the Kubernetes cluster of the `operation` repository. They are limited strictly to artifact production, as imagined in [Section 2.2](#22-high-level-design).
+Each repository is extended with a GitHub Actions workflow that triggers on well-defined versioning events, such as pushes to the `main` branch or on annotated Git tags, as described in the assignment requirements. The pipeline is responsible for compiling the application, running any test suites, building a Docker image, and publishing that image to the GitHub Container Registry. It is important to note that the workflow does not contain any deployment logic, nor does it interact with the Kubernetes cluster of the `operation` repository. They are limited strictly to artifact production, as imagined in [Section 2.2](#22-high-level-design).
 
-Versioning follows the conventions already established in the project. Stable releases are produced only when an explicit semantic version tag is pushed, while feature branches may produce pre-release images for testing purposes. Each published image is immutable, triggers a notification to the `operation` repository signaling that new artifacts are available, and, for traceability purposes, includes standard OCI metadata labels [7] that link it to its source repository, commit hash, build timestamp, and version tag.
+Versioning follows the conventions already established in the project. Stable releases are produced only when an explicit semantic version tag is pushed, while feature branches may produce pre-release images for testing purposes. Each published image is immutable, triggers a notification to the `operation` repository signaling that new artifacts are available, and, for traceability purposes, includes standard OCI metadata labels [8] that link it to its source repository, commit hash, build timestamp, and version tag.
 
 Once this phase is complete, all manual `docker build` and `docker push` steps are eliminated, and every container image becomes immutable, versioned, and reproducible.
+
 
 ### 3.2. Create a Deployment Control Plane
 
 The second phase (Figure 4) introduces the central element of the proposed extension, namely the Deployment Control Plane, implemented within the `operation` repository, that becomes the authoritative source of truth on deployment-relevant information.
 
 <!-- To be created:
-<figure> 
-  <img src="images/extension/reconciliation-flow.png" alt="GitOps reconciliation loop"> <figcaption><b>Figure 4:</b> GitOps Reconciliation Loop between the <code>operation</code> repository and the Kubernetes Cluster.</figcaption> 
+<figure>
+  <img src="images/extension/reconciliation-flow.png" alt="GitOps reconciliation loop"> <figcaption><b>Figure 4:</b> GitOps Reconciliation Loop between the <code>operation</code> repository and the Kubernetes Cluster.</figcaption>
 </figure> -->
 
 We achieve this by adding explicit environment directories, such as staging, production, and experiment, to the `operation` repository. Each should contain configuration files that declare which versions of `app` and `model-service` images are expected to run, along with any environment-specific Helm commands. These files describe what the desired deployment state should be and can be versioned through Git like any other code. As a result, Git history becomes a complete record of every deployment decision and can be inspected whenever necessary.
 
-We further introduce a GitOps controller, such as FluxCD [8] or ArgoCD [9], into the Kuberneted cluster during the provisioning phase by extending the existing playbooks. Once installed, the controller continuously monitors the `operation` repository and reconciles the running cluster state against the declared configuration. Any difference is automatically corrected. Conversely, any change to an environment configuration through a Git commit, such updating an image tag or modifying Helm values, results in a corresponding update to the cluster.
+We further introduce a GitOps controller, such as FluxCD [9] or ArgoCD [10], into the Kuberneted cluster during the provisioning phase by extending the existing playbooks. Once installed, the controller continuously monitors the `operation` repository and reconciles the running cluster state against the declared configuration. For example, if an image tag is accidentally modified or a Helm value is manually changed in the cluster, the GitOps controller detects the change from the declared state and automatically restores the correct configuration. This “self-healing” behavior [6] helps to ensure that the deployments remain consistent. Conversely, any change to an environment configuration through a Git commit, such as updating an image tag or modifying Helm values, results in a corresponding update to the cluster.
 
 By making the operation repository the single source of truth, this phase directly addresses the reproducibility and traceability problems identified in [Section 1.2](#12-the-release-engineering-problem). Rollbacks become trivial Git operations, deployment history is inherently auditable, and the question of “what is currently running” can be answered deterministically by inspecting the repository state.
 
@@ -140,9 +145,9 @@ By making the operation repository the single source of truth, this phase direct
 The last phase extends the Deployment Control Plane to support experimentation in a structured and reproducible way. In the current workflow, experiments require a series of manual configuration steps and are difficult to reproduce once completed. This phase addresses that issue by treating experiment setups as declarative deployment variants, as seen in Figure 5.
 
 <!-- To be created:
-<figure> 
-  <img src="images/extension/experiment-lifecycle.png" alt="Declarative experiment lifecycle"> 
-  <figcaption><b>Figure 5:</b> Lifecycle of an Experiment Managed through the Deployment Control Plane.</figcaption> 
+<figure>
+  <img src="images/extension/experiment-lifecycle.png" alt="Declarative experiment lifecycle">
+  <figcaption><b>Figure 5:</b> Lifecycle of an Experiment Managed through the Deployment Control Plane.</figcaption>
 </figure> -->
 
 Experiments are represented as environment-specific configuration files within the `operation` repository. Each experiment file explicitly defines the image versions under test, along with the necessary traffic routing strategy and any other relevant Istio settings, such as canary or A/B traffic splits. For example, a canary experiment could be represented as a Helm values override combined with an Istio VirtualService that routes a fixed percentage of traffic to a new model version. Because these configurations are applied through the same GitOps reconciliation mechanism as in [Section 3.2](#32-create-a-deployment-control-plane), experiments are also guaranteed to be traceable, auditable, and reversible.
@@ -166,20 +171,23 @@ Formally stated, we make the following hypotheses:
 
 These hypotheses directly correspond to the shortcomings identified in Sections [1.2](#12-the-release-engineering-problem) and [1.3](#13-negative-impacts).
 
+
 ### 4.2. Metrics
 
 To test our hypotheses, we define the following set of measurable and observable metrics:
 
 **1. Deployment Lead Time**, as measured by the time taken between pushing a change to a repository and the application becoming accessible at `http://localhost:8080`. This metric captures the operational impact of our automation and represents the “change lead time” concept emphasized by DORA [3].
 
-**2. Deployment Reproducibility**, as evaluated by trying to recreate a previously deployed state using only the Git history of the `operation` repository. It is considered successful if the cluster reaches the correct declared image versions and routing configuration without needing any undocumented manual intervention. 
+**2. Deployment Reproducibility**, as evaluated by trying to recreate a previously deployed state using only the Git history of the `operation` repository. It is considered successful if the cluster reaches the correct declared image versions and routing configuration without needing any undocumented manual intervention.
 
 **3. Deployment Error Frequency**, tracked qualitatively by recording any time a deployment needs any manual intervention, such as fixing an image tag mismatch or incorrect Helm values.
 
+**4. Recovery Time**, defined as the time needed for the system to return to the declared deployment state after a failure is introduced.
+
 <!-- To be created:
-<figure> 
-  <img src="images/extension/experiment-metrics.png" alt="Experiment Metrics"> 
-  <figcaption><b>Figure 6:</b> Metrics used for the Extension Experiment.</figcaption> 
+<figure>
+  <img src="images/extension/experiment-metrics.png" alt="Experiment Metrics">
+  <figcaption><b>Figure 6:</b> Metrics used for the Extension Experiment.</figcaption>
 </figure> -->
 
 
@@ -189,46 +197,51 @@ We compare the "before" and "after" states of the project based on the metrics i
 
 #### Step 1: Establish a Baseline
 
-Using the current workflow, the application is deployed multiple times following the steps described in [Section 1.1](#11-current-state). For each run, the *deployment lead time* is recorded, and any *manual corrections or errors* are noted. In addition, one previously executed experiment is manually reproduced to check its *reproducibility* at the present time.
+Using the current workflow, the application is deployed multiple times following the steps described in [Section 1.1](#11-current-state). For each run, the *deployment lead time* is recorded, and any *manual corrections or errors* are noted. In addition, one previously executed experiment is manually reproduced to check its *reproducibility* at the present time. Regarding the *operational robustness*, we can simulate a deployment failure, for instance, by deleting a running pod or deployment, and measure the *time required for the system to restore the desired state*. In the manual workflow, recovery requires developer intervention.
 
 #### Step 2: Enable the CI/CD Pipeline
 
-We enable the extension and repeat the same deployment process. Image versions are updated exclusively through commits to the `operation` repository, and deployments are triggered by the reconciliation mechanism rather than manual Helm commands.
+We enable the extension and repeat the same deployment process. Image versions are updated exclusively through commits to the `operation` repository, and deployments are triggered by the reconciliation mechanism rather than manual Helm commands. For the failure experiment, the GitOps-driven system should automatically reconcile the state, thereby reducing both downtime and human error.
 
 #### Step 3: Analysis
 
 The results of both phases are compared qualitatively and quantitatively, based on the metrics recorded in the previous steps.
 
+
 ### 4.4. Visualizations of the Results
 
-The results of the experiment can be visualized using the existing monitoring stack introduced in Assignments 3 and 4. Figure 7 presents an example way in which they can be illustrated. 
+The results of the experiment can be visualized using the existing monitoring stack introduced in Assignments 3 and 4. Figure 7 presents an example way in which they can be illustrated.
 
 <!-- To be created:
-<figure> 
-  <img src="images/extension/experiment-visualization.png" alt="Experiment Visualization"> 
-  <figcaption><b>Figure 7:</b> Example Visualizations that can be used for the Extension Experiment.</figcaption> 
+<figure>
+  <img src="images/extension/experiment-visualization.png" alt="Experiment Visualization">
+  <figcaption><b>Figure 7:</b> Example Visualizations that can be used for the Extension Experiment.</figcaption>
 </figure> -->
 
-For instance, time-series graphs in Grafana could show the *deployment lead time* before and after automation. *Deployment reproducibility* could be visualized through the reduction of configuration drift, showing the transition from partially inconsistent states to a fully declarative and synchronized deployment state. Finally, *operational robustness* could be illustrated by experiment success rates, comparing the number of manual deployments that need some human intervention with the number of fully automated runs that complete without errors.
+For instance, time-series graphs in Grafana could show the *deployment lead time* before and after automation. *Deployment reproducibility* could be visualized through the reduction of configuration drift, showing the transition from partially inconsistent states to a fully declarative and synchronized deployment state. We can similarly plot the *recovery time* needed after simulated failures for both versions of the system. Finally, the *deployment error frequency* could be illustrated by experiment success rates, done through comparing the number of manual deployments that need some human intervention with the number of fully automated runs that complete without errors.
 
 These visualizations support the central claim of the extension, which is that deployment state becomes observable, traceable, and reproducible once it is managed declaratively.
 
 
 ## 5. Discussion
-This section is a reflection upon the proposed extension and its trade-offs.
+
+This section is a reflection on the proposed extension and its trade-offs.
+
 
 ### 5.1. Assumptions
 
 The extension relies on several important assumptions. First, it assumes that all deployable components can be packaged as immutable artifacts, specifically container images, and that these artifacts are versioned consistently across repositories. This assumption should be true in modern microservice architectures, but it may not hold in systems that rely on mutable runtime configuration or shared state outside of version control.
 
-Second, the design assumes that Git is treated as the authoritative source of truth for deployment state and that all deployment-relevant changes are made through commits to the `operation` repository. This relies on the developers themselves maintaining a strictly disciplined workflow, a constraint is intentional and consistent with GitOps principles [4].
+Second, the design assumes that Git is treated as the authoritative source of truth for deployment state and that all deployment-relevant changes are made through commits to the `operation` repository. This relies on the developers themselves maintaining a strictly disciplined workflow, a constraint that is intentional and consistent with GitOps principles [4].
 
-Finally, the extension is designed under the assumption that the infrastructure itself does not change frequently. In this project, the Kubernetes cluster, networking stack, and supporting services are provisioned only once using Vagrant and Ansible and then remain largely static during normal operation. Because of this, the extension deliberately focuses on automating application deployments (container images, Helm values, Istio routing) rather than automating the creation or scaling of the infrastructure. However, in environments where the infrastructure itself changes frequently, the extension would not be sufficient on its own and additional steps would be required to automate infrastructural changes alongside application releases.
+Finally, the extension is designed under the assumption that the infrastructure itself does not change frequently. In this project, the Kubernetes cluster, networking stack, and supporting services are provisioned only once using Vagrant and Ansible and then remain largely static during normal operation. Because of this, the extension deliberately focuses on automating application deployments (container images, Helm values, Istio routing) rather than automating the creation or scaling of the infrastructure. However, in environments where the infrastructure itself changes frequently, the extension would not be sufficient on its own, and additional steps would be required to automate infrastructural changes alongside application releases.
 
 
 ### 5.2. Impact of Changes upon the Project
 
 On a practical level, the extension makes normal releases much easier. Developers no longer have to coordinate steps across multiple repositories or manually run a lot of complex commands. They can update the deployment simply by changing the declarative configuration in the `operation` repository and letting the system apply it automatically. This reduces deployment time and makes sure that each deployment behaves consistently, which, in turn, makes the process more reliable.
+
+The extension also improves security by limiting direct access to the cluster. Developers no longer need to store or use `.kubeconfig` files to manually deploy changes because the `operation` repository and GitOps controller enforce the deployment state. This reduces the risk of accidentally changing the configuration or exposing sensitive credentials.
 
 Conceptually, the extension changes how deployment is thought about in the project. It goes from a sequence of actions to be executed correctly to a problem of managing state, where the desired system configuration is declared and enforced automatically. The `app` and `model-service` repositories handle building the artifacts, while the `operation` repository decides which versions run where and when. This makes the deployment state explicit and easy to inspect, instead of something that exists only as a side effect of executing commands.
 
@@ -246,35 +259,40 @@ Another challenge is that some of the details of the deployment become less visi
 
 ### 5.4. Why Benefits Outweigh the Risks
 
-Despite the downsides mentioned in [Section 5.3](#53-potential-downsides), the benefits of the proposed extension clearly outweigh the risks within the context of this project. For one, deployments become more predictable and developers can rely on the system to produce the same outcome every time, without needing to remember sequences of manual steps. Rollbacks and experiment reproductions are similarly straightforward because every change is recorded in Git.
+Despite the downsides mentioned in [Section 5.3](#53-potential-downsides), the benefits of the proposed extension clearly outweigh the risks within the context of this project. For one, deployments become more predictable, and developers can rely on the system to produce the same outcome every time, without needing to remember sequences of manual steps. Rollbacks and experiment reproductions are similarly straightforward because every change is recorded in Git.
 
 The initial effort to set up the extension also pays off over time. Once the system is in place, developers will spend less time coordinating releases or fixing deployment errors, which lets them focus on developing more features. The extension also scales well. When adding a new service or experiment, the developers can simply follow the same pattern of artifact production and declarative deployment. This consistency reduces the cognitive load placed on the developer and makes the workflow easier to maintain.
+
+Beyond this project, the extension provides a pattern for coordinating deployments in any multi-repository microservice architecture. Adding new services or experiments follows the same declarative workflow, which makes the approach scalable and maintainable as the system grows.
 
 In short, the extension turns the current fragile and manual process into a reliable and transparent one. The risks are manageable and mostly upfront, while the benefits, that is, faster deployments, reproducibility, traceability, and scalability, persist over the lifetime of the project. For this reason, the advantages clearly outweigh the costs.
 
 
 ## 6. References
+
 [1] B. Beyer, C. Jones, J. Petoff, and N. R. Murphy, Eds., *Site Reliability Engineering: How Google Runs Production Systems*. Sebastopol, CA, USA: O’Reilly Media, 2016. [Online]. Available: https://sre.google/sre-book/table-of-contents/
 
 [2] J. Sweller, “Cognitive load during problem solving: Effects on learning,” *Cognitive Science*, vol. 12, no. 2, pp. 257–285, 1988, doi: 10.1207/s15516709cog1202_4.
 
 [3] DORA Research Program, *Accelerate: State of DevOps Report 2024*. Google Cloud, 2024. [Online]. Available: https://dora.dev/research/2024/dora-report/2024-dora-accelerate-state-of-devops-report.pdf
 
-[4] OpenGitOps, “OpenGitOps,” *OpenGitOps*, [Online]. Available: https://opengitops.dev/
+[4] OpenGitOps, "OpenGitOps," *OpenGitOps*, [Online]. Available: https://opengitops.dev/
 
 [5] I. Mujagic, "Efficient Cross-Repository CI/CD: Running Targeted Tests with GitHub Actions," *The Green Report Blog*, Sep. 28, 2023. [Online]. Available: https://www.thegreenreport.blog/articles/efficient-cross-repository-cicd-running-targeted-tests-with-github-actions/efficient-cross-repository-cicd-running-targeted-tests-with-github-actions.html.
 
-[6] A. Totin, “Configuration drift: The pitfall of local machines,” *JetBrains Blog*, 2025. [Online]. Available: https://blog.jetbrains.com/codecanvas/2025/08/configuration-drift-the-pitfall-of-local-machines/
+[6] P. Wollgast, "GitOps: How to Sleep Peacefully with Self‑Healing Services & Infrastructure, *applydata by DICONIUM Blog*, 9 May 2022. [Online]. Available: https://applydata.io/gitops-self-healing-services-infrastructure/.
 
-[7] Open Container Initiative, *OCI Image Format Specification*, v1.0.2, 2021. [Online]. Available: https://github.com/opencontainers/image-spec/blob/main/annotations.md.
+[7] A. Totin, "Configuration drift: The pitfall of local machines," *JetBrains Blog*, 2025. [Online]. Available: https://blog.jetbrains.com/codecanvas/2025/08/configuration-drift-the-pitfall-of-local-machines/
 
-[8] Flux Project Authors, "Flux - the GitOps family of projects," *Flux Documentation*, 2025. [Online]. Available: https://fluxcd.io/.
+[8] Open Container Initiative, *OCI Image Format Specification*, v1.0.2, 2021. [Online]. Available: https://github.com/opencontainers/image-spec/blob/main/annotations.md.
 
-[9] Argo Project Authors, "Argo CD - Declarative GitOps CD for Kubernetes," *Argo Project Documentation*, 2025. [Online]. Available: https://argoproj.github.io/cd/.
+[9] Flux Project Authors, "Flux - the GitOps family of projects," *Flux Documentation*, 2025. [Online]. Available: https://fluxcd.io/.
+
+[10] Argo Project Authors, "Argo CD - Declarative GitOps CD for Kubernetes," *Argo Project Documentation*, 2025. [Online]. Available: https://argoproj.github.io/cd/.
 
 
 ## 7. Declarative Use of Generative AI
-Chatbots (ChatGPT and Claude) were used to rephrase text and improve style, structure, and grammar. They were not used to generate new content, but rather to improve the overall clarity, consistency, and readability of the report. Additionally to LLMs, Grammarly has been used to correct any grammar mistakes.
+Chatbots (ChatGPT and Claude) were used to rephrase text and improve style, structure, and grammar. They were not used to generate new content, but rather to improve the overall clarity, consistency, and readability of the report. In addition to LLMs, Grammarly has been used to correct any grammar mistakes.
 
 Examples of prompts used:
 
