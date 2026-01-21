@@ -171,7 +171,7 @@ These hypotheses directly correspond to the shortcomings identified in Sections 
 
 ### 4.2. Metrics
 
-To test our hypotheses, we define the following set of measurable and observable metrics:
+To test our hypotheses, as in Figure 6, we define the following set of measurable and observable metrics:
 
 **1. Deployment Lead Time**, as measured by the time taken between pushing a change to a repository and the application becoming accessible at `http://localhost:8080`. This metric captures the operational impact of our automation and represents the “change lead time” concept emphasized by DORA [3].
 
@@ -181,11 +181,10 @@ To test our hypotheses, we define the following set of measurable and observable
 
 **4. Recovery Time**, defined as the time needed for the system to return to the declared deployment state after a failure is introduced.
 
-<!-- To be created:
 <figure>
-  <img src="images/extension/experiment-metrics.png" alt="Experiment Metrics">
+  <img src="images/extension/Experiment Metrics.png" alt="Experiment Metrics">
   <figcaption><b>Figure 6:</b> Metrics used for the Extension Experiment.</figcaption>
-</figure> -->
+</figure>
 
 
 ### 4.3. Experiment Methodology
@@ -209,11 +208,11 @@ The results of both phases are compared qualitatively and quantitatively, based 
 
 The results of the experiment can be visualized using the existing monitoring stack introduced in Assignments 3 and 4. Figure 7 presents an example way in which they can be illustrated.
 
-<!-- To be created:
+To be created:
 <figure>
   <img src="images/extension/experiment-visualization.png" alt="Experiment Visualization">
   <figcaption><b>Figure 7:</b> Example Visualizations that can be used for the Extension Experiment.</figcaption>
-</figure> -->
+</figure>
 
 For instance, time-series graphs in Grafana could show the *deployment lead time* before and after automation. *Deployment reproducibility* could be visualized through the reduction of configuration drift, showing the transition from partially inconsistent states to a fully declarative and synchronized deployment state. We can similarly plot the *recovery time* needed after simulated failures for both versions of the system. Finally, the *deployment error frequency* could be illustrated by experiment success rates, done through comparing the number of manual deployments that need some human intervention with the number of fully automated runs that complete without errors.
 
