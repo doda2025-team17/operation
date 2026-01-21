@@ -103,7 +103,7 @@ Additionally, the solution introduces scientific experiment management for Assig
 This section describes how the proposed cross-repository CI/CD extension could realistically be implemented. The plan is divided into three phases, which incrementally improve the existing design and can be validated in isolation:
 
 1. Standardizing image building
-2. Establishing the deployment control plane
+2. Establishing the deployment control plane and reconciliation layer
 3. Integrating the experiment configuration as a declarative state
 
 
@@ -111,11 +111,10 @@ This section describes how the proposed cross-repository CI/CD extension could r
 
 The first phase of the implementation standardizes how Docker images are built and published in the `app` and `model-service` repositories, replacing the current manual steps with fully automated CI workflows, whose sole responsibility is producing immutable artifacts, as described in Figure 3.
 
-<!-- To be created:
 <figure>
-  <img src="images/extension/image-build-workflow.png" alt="Automated image build pipeline">
+  <img src="images/extension/Image Build.png" alt="Automated image build pipeline">
   <figcaption><b>Figure 3:</b> Automated Artifact Production Pipeline for the <code>app</code> and <code>model-service</code> Repositories.</figcaption>
-</figure> -->
+</figure>
 
 Each repository is extended with a GitHub Actions workflow that triggers on well-defined versioning events, such as pushes to the `main` branch or on annotated Git tags, as described in the assignment requirements. The pipeline is responsible for compiling the application, running any test suites, building a Docker image, and publishing that image to the GitHub Container Registry. It is important to note that the workflow does not contain any deployment logic, nor does it interact with the Kubernetes cluster of the `operation` repository. They are limited strictly to artifact production, as imagined in [Section 2.2](#22-high-level-design).
 
@@ -124,14 +123,13 @@ Versioning follows the conventions already established in the project. Stable re
 Once this phase is complete, all manual `docker build` and `docker push` steps are eliminated, and every container image becomes immutable, versioned, and reproducible.
 
 
-### 3.2. Create a Deployment Control Plane
+### 3.2. Create a Deployment Control Plane and Reconciliation Layer
 
 The second phase (Figure 4) introduces the central element of the proposed extension, namely the Deployment Control Plane, implemented within the `operation` repository, that becomes the authoritative source of truth on deployment-relevant information.
 
-<!-- To be created:
 <figure>
-  <img src="images/extension/reconciliation-flow.png" alt="GitOps reconciliation loop"> <figcaption><b>Figure 4:</b> GitOps Reconciliation Loop between the <code>operation</code> repository and the Kubernetes Cluster.</figcaption>
-</figure> -->
+  <img src="images/extension/Reconciliation Flow.png" alt="GitOps reconciliation loop"> <figcaption><b>Figure 4:</b> GitOps Reconciliation Loop between the <code>operation</code> repository and the Kubernetes Cluster.</figcaption>
+</figure>
 
 We achieve this by adding explicit environment directories, such as staging, production, and experiment, to the `operation` repository. Each should contain configuration files that declare which versions of `app` and `model-service` images are expected to run, along with any environment-specific Helm commands. These files describe what the desired deployment state should be and can be versioned through Git like any other code. As a result, Git history becomes a complete record of every deployment decision and can be inspected whenever necessary.
 
@@ -144,11 +142,10 @@ By making the operation repository the single source of truth, this phase direct
 
 The last phase extends the Deployment Control Plane to support experimentation in a structured and reproducible way. In the current workflow, experiments require a series of manual configuration steps and are difficult to reproduce once completed. This phase addresses that issue by treating experiment setups as declarative deployment variants, as seen in Figure 5.
 
-<!-- To be created:
 <figure>
-  <img src="images/extension/experiment-lifecycle.png" alt="Declarative experiment lifecycle">
+  <img src="images/extension/Experiment Lifecycle.png" alt="Declarative experiment lifecycle">
   <figcaption><b>Figure 5:</b> Lifecycle of an Experiment Managed through the Deployment Control Plane.</figcaption>
-</figure> -->
+</figure>
 
 Experiments are represented as environment-specific configuration files within the `operation` repository. Each experiment file explicitly defines the image versions under test, along with the necessary traffic routing strategy and any other relevant Istio settings, such as canary or A/B traffic splits. For example, a canary experiment could be represented as a Helm values override combined with an Istio VirtualService that routes a fixed percentage of traffic to a new model version. Because these configurations are applied through the same GitOps reconciliation mechanism as in [Section 3.2](#32-create-a-deployment-control-plane), experiments are also guaranteed to be traceable, auditable, and reversible.
 
