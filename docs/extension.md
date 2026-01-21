@@ -210,8 +210,8 @@ The results of the experiment can be visualized using the existing monitoring st
 
 To be created:
 <figure>
-  <img src="images/extension/experiment-visualization.png" alt="Experiment Visualization">
-  <figcaption><b>Figure 7:</b> Example Visualizations that can be used for the Extension Experiment.</figcaption>
+  <img src="images/extension/Visualizations.png" alt="Experiment Visualization">
+  <figcaption><b>Figure 7:</b> Example Visualizations that can be used for the Experiment part of the Extension.</figcaption>
 </figure>
 
 For instance, time-series graphs in Grafana could show the *deployment lead time* before and after automation. *Deployment reproducibility* could be visualized through the reduction of configuration drift, showing the transition from partially inconsistent states to a fully declarative and synchronized deployment state. We can similarly plot the *recovery time* needed after simulated failures for both versions of the system. Finally, the *deployment error frequency* could be illustrated by experiment success rates, done through comparing the number of manual deployments that need some human intervention with the number of fully automated runs that complete without errors.
