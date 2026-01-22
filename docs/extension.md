@@ -118,7 +118,7 @@ The first phase of the implementation standardizes how Docker images are built a
 
 Each repository is extended with a GitHub Actions workflow that triggers on well-defined versioning events, such as pushes to the `main` branch or on annotated Git tags, as described in the assignment requirements. The pipeline is responsible for compiling the application, running any test suites, building a Docker image, and publishing that image to the GitHub Container Registry. It is important to note that the workflow does not contain any deployment logic, nor does it interact with the Kubernetes cluster of the `operation` repository. They are limited strictly to artifact production, as imagined in [Section 2.2](#22-high-level-design).
 
-Versioning follows the conventions already established in the project. Stable releases are produced only when an explicit semantic version tag is pushed, while feature branches may produce pre-release images for testing purposes. Each published image is immutable, triggers a notification to the `operation` repository signaling that new artifacts are available, and, for traceability purposes, includes standard OCI metadata labels [8] that link it to its source repository, commit hash, build timestamp, and version tag.
+Versioning follows the conventions already established in the project. Stable releases are produced only when an explicit semantic version tag is pushed, while feature branches may produce pre-release images for testing purposes. Each published image is immutable, triggers a notification to the `operation` repository signaling that new artifacts are available, and, for traceability purposes, includes standard OCI metadata labels [8] that link it to its source repository, such as commit hash, build timestamp, and version tag.
 
 Once this phase is complete, all manual `docker build` and `docker push` steps are eliminated, and every container image becomes immutable, versioned, and reproducible.
 
@@ -162,7 +162,7 @@ Formally stated, we make the following hypotheses:
 
 **1. H1 (Deployment Efficiency):** Introducing an automated, GitOps-based CI/CD pipeline reduces the time required to deploy a new application version compared to the current manual process.
 
-**2. H2 (Reproducibility):**  Deployment states managed declaratively through the operation repository can be reliably reproduced from version control without relying on undocumented manual steps.
+**2. H2 (Reproducibility):**  Deployment states managed declaratively through the `operation` repository can be reliably reproduced from version control without relying on undocumented manual steps.
 
 **3. H3 (Operational Robustness):** Automating release coordination across repositories reduces configuration mismatches and deployment-related errors.
 
@@ -208,7 +208,6 @@ The results of both phases are compared qualitatively and quantitatively, based 
 
 The results of the experiment can be visualized using the existing monitoring stack introduced in Assignments 3 and 4. Figure 7 presents an example way in which they can be illustrated.
 
-To be created:
 <figure>
   <img src="images/extension/Visualizations.png" alt="Experiment Visualization">
   <figcaption><b>Figure 7:</b> Example Visualizations that can be used for the Experiment part of the Extension.</figcaption>
@@ -248,7 +247,7 @@ This change is particularly significant for the experimentation part of the proj
 
 Firstly, the extension adds some complexity to the project. Modifying the existing GitHub Actions workflows, setting up a GitOps controller, and coordinating across repositories requires an initial investment of time and effort. For a small team, this workload might feel heavy compared to the manual process they are replacing, even though it will pay off once the system is running.
 
-There is also a risk that one mistake in the `operation` repository affects all the environments at once. Where before, a manual error might only impact a single deployment, with automation, a misconfigured image tag or Helm value could propagate widely through the codebase. We can reduce the risk of this through version control and the ability to roll back changes, but testing and code review will still become more important than before.
+There is also a risk that one mistake in the `operation` repository affects all the environments at once. Where before, a manual error might only impact a single deployment, with automation, a misconfigured image tag or Helm value could propagate widely through the codebase. We can reduce the risk of this through version control and the ability to roll back changes, but testing and code review will become more important than before.
 
 Another challenge is that some of the details of the deployment become less visible. Automation handles many of the steps that developers used to perform manually, which is a benefit in terms of reliability and speed, but it can make it harder for new team members to understand exactly what is happening in the cluster. Good documentation and observability will become necessary to ensure that the system remains transparent and maintainable.
 
