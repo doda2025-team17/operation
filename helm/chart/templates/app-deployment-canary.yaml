@@ -48,17 +48,14 @@ spec:
                   name: {{ include "sms-app.fullname" . }}-config
                   key: APP_SERVER_PORT
             - name: MODEL_HOST
-              valueFrom:
-                configMapKeyRef:
-                  name: {{ include "sms-app.fullname" . }}-config
-                  key: MODEL_HOST
+              value: "http://{{ include "sms-app.model.name" . }}-v2:{{ .Values.modelService.service.port }}"
             - name: SMTP_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ include "sms-app.fullname" . }}-secrets
                   key: SMTP_PASSWORD
             - name: DASHBOARD_VERSION
-              value: {{ .Values.config.dashboardVersionCanary | default "v2" | quote }}  # "v2"
+              value: "v2"
           readinessProbe:
             httpGet:
               path: {{ .Values.app.readinessProbe.path }}
