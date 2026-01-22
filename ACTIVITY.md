@@ -139,6 +139,7 @@ No work.
 
 - Reviewed and tested numerous PR's from the team.
 - Attended the team meeting on Thurday.
+- Worked on PR [#48](https://github.com/doda2025-team17/operation/pull/48)
 
 ## Week Q4.6 (Dec. 15 - 21)
 
