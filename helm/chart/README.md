@@ -164,6 +164,9 @@ http://localhost:9090
 # Then in the Prometheus UI, paste this query in the search box:
 sum by (version,source) (rate(sms_model_predictions_total{namespace="sms-app"}[1m])) 
 
+# Grafana: the “Shadow vs Stable (Model Service)” dashboard includes a “Request Rate by Source”
+# panel showing app vs shadow for each version.
+
 ```
 
 ## Uninstall
