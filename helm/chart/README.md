@@ -386,7 +386,7 @@ curl -X POST http://localhost:8080/sms \
   -H "Content-Type: application/json" \
   -d '{"sms": "Congratulations! You won a FREE iPhone! Call now!"}'
 
-# Multiple requests to populate metrics:
+# 20 requests to populate metrics:
 for i in {1..20}; do
   curl -s -X POST http://localhost:8080/sms \
     -H "Content-Type: application/json" \
@@ -394,6 +394,15 @@ for i in {1..20}; do
 done
 wait
 echo "Done generating traffic!"
+
+# 200 requests:
+for i in {1..200}; do
+  curl -s -X POST http://localhost:8080/sms \
+    -H "Content-Type: application/json" \
+    -d "{\"sms\":\"load $i\"}" > /dev/null &
+done
+wait
+echo done
 
 # Verify metrics increased:
 curl -s http://localhost:8080/metrics | grep -E "classified_total|latency_seconds_count"
