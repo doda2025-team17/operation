@@ -22,7 +22,7 @@ spec:
       scheme: http
       relabelings:
         - sourceLabels: [__meta_kubernetes_pod_label_version]
-          targetLabel: version
+          targetLabel: pod_version
         - sourceLabels: [__meta_kubernetes_pod_name]
           targetLabel: pod
 {{- end }}

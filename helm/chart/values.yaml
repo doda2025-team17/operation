@@ -133,6 +133,8 @@ istio:
   enabled: true  # Set to true to enable Istio routing
   hosts:
     - sms-app.local
+    - stable.sms-app.local
+    - canary.sms-app.local
   
   gateway:
     name: sms-app-gateway
