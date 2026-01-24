@@ -58,24 +58,11 @@ docker login ghcr.io
 # Password: YOUR_PAT
 ```
 
-### **Force Kubernetes to pull new images:**
+### Force Kubernetes to pull new images
 ```bash
    cd ~/Desktop/DODA/operation
    export KUBECONFIG=vm/kubeconfig
    kubectl rollout restart deployment -n sms-app
-```
-
-### **Verify:**
-```bash
-   # Watch pods restart
-   kubectl get pods -n sms-app -w
-
-   # Check logs for new version
-   kubectl logs -n sms-app -l app.kubernetes.io/name=sms-app-app --tail=10
-
-   # Test endpoint
-   kubectl port-forward -n sms-app svc/sms-app-app 8080:80
-   curl http://localhost:8080/metrics
 ```
 
 ## Deploy Configurations
@@ -318,8 +305,7 @@ Expected output should include:
 
 ### Test SMS Classification (Generate Metrics Data)
 
-The metrics are only recorded when making classification requests to `POST /sms`. 
-Requests to `/` (root) do NOT generate metrics.
+The metrics are only recorded when making classification requests to `POST /sms`.
 
 ```bash
 # Terminal 1: Port-forward to app service (if not already running)
@@ -393,12 +379,6 @@ kubectl port-forward svc/sms-app-kube-prometheus-st-prometheus 9090:9090 -n sms-
 Then open http://localhost:9090/alerts in your browser. The `HighRequestRate` alert should:
 1. Show as **Pending** after ~1 minute of traffic
 2. Show as **Firing** after 2 minutes of sustained traffic
-
-You can also query the metric directly in Prometheus:
-```promql
-sum(rate(sms_messages_classified_total{namespace="sms-app"}[1m])) * 60
-```
-This should show a value > 15 while traffic is being generated.
 
 ### Email Alerting Configuration
 
