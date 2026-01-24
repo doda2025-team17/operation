@@ -228,6 +228,9 @@ curl http://sms-app.local
 | `ingress.enabled` | Enable NGINX ingress | `true` |
 | `ingress.className` | Ingress class | `nginx` |
 | `ingress.hosts[0].host` | Ingress hostname | `sms-app.local` |
+| `istio.hostRouting.experiment` | Host for weighted experiment traffic | `sms-app.local` |
+| `istio.hostRouting.stable` | Host forced to stable (v1) | `stable.sms-app.local` |
+| `istio.hostRouting.canary` | Host forced to canary (v2) | `canary.sms-app.local` |
 | `secrets.smtpPassword` | SMTP password | `CHANGE_ME_IN_HELM` |
 | `monitoring.enabled` | Enable ServiceMonitors | `false` |
 | `alerting.enabled` | Enable AlertManager config | `false` |
@@ -245,6 +248,8 @@ curl http://sms-app.local
 |---------|-----|-------|
 | App | http://sms-app.local | Via NGINX Ingress |
 | App (Istio) | http://sms-istio.local | Via Istio Gateway |
+| App (stable) | http://stable.sms-app.local | Always v1 |
+| App (canary) | http://canary.sms-app.local | Always v2 |
 | Grafana | http://grafana.local | Login: admin/admin |
 | Prometheus | http://localhost:9090 | port forward: `kubectl port-forward svc/sms-app-kube-prometheus-st-prometheus 9090:9090 -n sms-app` (run `export KUBECONFIG=vm/kubeconfig` before) | 
 | AlertManager | http://localhost:9093 | port forward `kubectl port-forward svc/sms-app-kube-prometheus-st-alertmanager 9093:9093 -n sms-app` (run `export KUBECONFIG=vm/kubeconfig ` before) |
