@@ -108,12 +108,12 @@ data:
           "targets": [
             {
               "expr": "sum(rate(sms_model_predictions_total{version=\"v1\"}[5m]))",
-              "legendFormat": "primary(v1)",
+              "legendFormat": "Primary",
               "refId": "A"
             },
             {
               "expr": "sum(rate(sms_model_predictions_total{version=\"v2\", source=\"shadow\"}[5m]))",
-              "legendFormat": "shadow(v2)",
+              "legendFormat": "Shadow",
               "refId": "B"
             }
           ]

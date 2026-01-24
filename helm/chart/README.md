@@ -222,6 +222,13 @@ sum by (version,source) (rate(sms_model_predictions_total{namespace="sms-app"}[1
 
 ```
 
+Try:
+```bash
+for i in {1..50}; do   curl -s -X POST http://localhost:8080/sms     -H "Content-Type: application/json"     -d "{\"sms\":\"shadow test $i\"}" > /dev/null; done
+```
+Then open the corresponding Grafana Dashboard.
+
+
 ## Uninstall
 
 ```bash
