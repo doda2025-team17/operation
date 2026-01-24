@@ -167,7 +167,7 @@ monitoring:
   ports:
     name: metrics
   paths:
-    app: /actuator/prometheus
+    app: /metrics
     model: /metrics
   scrapeInterval: 15s
 
