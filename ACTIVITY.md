@@ -222,6 +222,8 @@ No work.
 ### Arnav
 
 ### Kristian
+- Separated traffic of app and shadow per version: PR [#80](https://github.com/doda2025-team17/operation/pull/80).
+- Added source label to model metrics for shadow traffic: PR [#16](https://github.com/doda2025-team17/model-service/pull/16).
 
 ### Ana
 
