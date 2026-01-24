@@ -15,7 +15,11 @@ Deploys the SMS spam detection stack (Spring Boot app + Python model service) to
 # Setup (once) -> run from operation folder
 export KUBECONFIG=vm/kubeconfig
 echo "192.168.56.95 sms-app.local grafana.local dashboard.local" | sudo tee -a /etc/hosts
-echo "192.168.56.96 sms-istio.local" | sudo tee -a /etc/hosts
+
+ISTIO_IP=$(kubectl -n istio-system get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+sudo sed -i '/sms-app\.local/d;/stable\.sms-app\.local/d;/canary\.sms-app\.local/d;/grafana\.local/d' /etc/hosts
+echo "$ISTIO_IP sms-app.local stable.sms-app.local canary.sms-app.local" | sudo tee -a /etc/hosts
+
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
 helm dependency build helm/chart
@@ -76,7 +80,7 @@ helm upgrade --install sms-app helm/chart -n sms-app --create-namespace --set se
 ```bash
 # Create SMTP secret first (for email alerts)
 kubectl create namespace sms-app --dry-run=client -o yaml | kubectl apply -f -
-kubectl create secret generic smtp-credentials -n sms-app --from-literal=password='your-smtp-password'
+kubectl create secret generic smtp-credentials -n sms-app --from-literal=SMTP_PASSWORD='your-smtp-password'
 
 # Deploy with full monitoring stack
 helm upgrade --install sms-app helm/chart -n sms-app \
@@ -97,7 +101,12 @@ helm upgrade --install sms-app helm/chart -n sms-app \
   --set secrets.smtpPassword=whatever \
   --set istio.enabled=true \
   --set app.canary.enabled=true \
-  --set "istio.hosts[0]=sms-istio.local"
+  --set 'istio.hosts[0]=sms-app.local' \
+  --set 'istio.hosts[1]=stable.sms-app.local' \
+  --set 'istio.hosts[2]=canary.sms-app.local' \
+  --set istio.hostRouting.experiment=sms-app.local \
+  --set istio.hostRouting.stable=stable.sms-app.local \
+  --set istio.hostRouting.canary=canary.sms-app.local
 
 # Enable sidecar injection
 kubectl label ns sms-app istio-injection=enabled --overwrite
@@ -106,7 +115,7 @@ kubectl label ns sms-app istio-injection=enabled --overwrite
 ### Full Stack (Everything)
 ```bash
 kubectl create namespace sms-app --dry-run=client -o yaml | kubectl apply -f -
-kubectl create secret generic smtp-credentials -n sms-app --from-literal=password='your-smtp-password'
+kubectl create secret generic smtp-credentials -n sms-app --from-literal=SMTP_PASSWORD='your-smtp-password'
 
 helm upgrade --install sms-app helm/chart -n sms-app \
   --set secrets.smtpPassword=whatever \
@@ -177,6 +186,11 @@ sum by (version,source) (rate(sms_model_predictions_total{namespace="sms-app"}[1
 
 ```bash
 helm uninstall sms-app --namespace sms-app
+```
+
+## Delete Secret
+```bash
+kubectl delete secret smtp-credentials -n sms-app
 ```
 
 ## Verify Installation
@@ -434,7 +448,7 @@ kubectl port-forward svc/sms-app-kube-prometheus-st-prometheus 9090:9090 -n sms-
 If dashboards are empty:
 - Make sure you've generated traffic using `POST /sms` (see above)
 - Check time range is set to "Last 15 minutes" or "Last 1 hour"
-- Click the refresh button (🔄) in the top right
+- Click the refresh button in the top right
 - Verify Prometheus datasource is working: **Connections → Data sources → Prometheus → Test**
 
 To test queries directly in Grafana:
@@ -448,18 +462,21 @@ To test queries directly in Grafana:
 # Get Istio IngressGateway IP
 INGRESS_IP=$(kubectl get svc istio-ingressgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
-echo $INGRESS_IP  # Should be 192.168.56.96
+echo $INGRESS_IP
 
-# Test basic access
-curl -H "Host: sms-istio.local" http://$INGRESS_IP/
+# Force stable
+curl -H "Host: stable.sms-app.local" http://$INGRESS_IP/
+
+# Force canary
+curl -H "Host: canary.sms-app.local" http://$INGRESS_IP/
+
+# Experiment traffic (weighted)
+curl -H "Host: sms-app.local" http://$INGRESS_IP/
 
 # Test weighted routing (run 10 times, ~90% v1, ~10% v2)
 for i in {1..10}; do
   curl -s -H "Host: sms-istio.local" http://$INGRESS_IP/ | grep -o 'version=[^"]*' || echo "response received"
 done
-
-# Test header-based routing (force canary)
-curl -H "Host: sms-istio.local" -H "x-version: canary" http://$INGRESS_IP/
 
 # Test sticky session
 curl -c cookies.txt -H "Host: sms-istio.local" http://$INGRESS_IP/
@@ -475,10 +492,10 @@ To verify canary (v2) vs stable (v1) metrics are being recorded separately:
 
 ```bash
 # Generate traffic through Istio (this distributes to both v1 and v2)
-INGRESS_IP=$(kubectl get svc istio-ingressgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+INGRESS_IP=$(kubectl -n istio-system get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
 for i in {1..30}; do
-  curl -s -X POST -H "Host: sms-istio.local" http://$INGRESS_IP/sms \
+  curl -s -X POST -H "Host: sms-app.local" http://$INGRESS_IP/sms \
     -H "Content-Type: application/json" \
     -d '{"sms": "Test message"}' > /dev/null &
 done

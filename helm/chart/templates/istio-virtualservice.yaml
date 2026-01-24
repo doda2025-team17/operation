@@ -18,9 +18,8 @@ spec:
     # 1) Force STABLE
     - name: app-stable-host
       match:
-        - headers:
-            host:
-              exact: "stable.sms-app.local"
+        - authority:
+            exact: {{ .Values.istio.hostRouting.stable | quote }}
       route:
         - destination:
             host: {{ include "sms-app.app.name" . }}
@@ -30,9 +29,8 @@ spec:
     # 2) Force CANARY
     - name: app-canary-host
       match:
-        - headers:
-            host:
-              exact: "canary.sms-app.local"
+        - authority:
+            exact: {{ .Values.istio.hostRouting.canary | quote }}
       route:
         - destination:
             host: {{ include "sms-app.app.name" . }}
@@ -42,9 +40,8 @@ spec:
     # 3) Default EXPERIMENT traffic (weighted)
     - name: app-experiment-weighted
       match:
-        - headers:
-            host:
-              exact: "sms-app.local"
+        - authority:
+            exact: {{ .Values.istio.hostRouting.experiment | quote }}
       route:
         - destination:
             host: {{ include "sms-app.app.name" . }}

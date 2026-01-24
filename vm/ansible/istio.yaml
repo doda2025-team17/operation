@@ -84,11 +84,11 @@
     - name: Install or upgrade Istio with fixed ingressgateway IP
       command: istioctl install -y -f /tmp/istio-operator.yaml
 
-    - name: Wait for istiod to be Available (up to 5m)
+    - name: Wait for istiod to be Available
       command: kubectl -n istio-system rollout status deploy/istiod --timeout=5m
       changed_when: false
 
-    - name: Wait for istio-ingressgateway to be Available (up to 5m)
+    - name: Wait for istio-ingressgateway to be Available
       command: kubectl -n istio-system rollout status deploy/istio-ingressgateway --timeout=5m
       changed_when: false
 
