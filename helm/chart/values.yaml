@@ -34,15 +34,15 @@ app:
     replicaCount: 1
     versionLabel: v2  # Version label for canary deployment
     image:
-      repository: ""  # Defaults to app.image.repository if empty
-      tag: "1.0.4"         # Defaults to app.image.tag if empty
-      pullPolicy: ""  # Defaults to app.image.pullPolicy if empty
+      repository: "" # Defaults to app.image.repository if empty
+      tag: "latest"
+      pullPolicy: Always
     podAnnotations: {}
   
   image:
     repository: ghcr.io/doda2025-team17/app
-    tag: "1.0.3"
-    pullPolicy: IfNotPresent
+    tag: "latest"
+    pullPolicy: Always
   containerPort: 8080
   service:
     type: ClusterIP
@@ -73,14 +73,14 @@ modelService:
     replicaCount: 1
     versionLabel: v2  # Version label for canary deployment
     image:
-      repository: ""  # Defaults to modelService.image.repository if empty
-      tag: "1.0.3"    # Defaults to modelService.image.tag if empty
-      pullPolicy: ""  # Defaults to modelService.image.pullPolicy if empty
+      repository: ""
+      tag: "latest"
+      pullPolicy: Always
   
   image:
     repository: ghcr.io/doda2025-team17/model-service
-    tag: "1.0.2"
-    pullPolicy: IfNotPresent
+    tag: "latest"
+    pullPolicy: Always
   containerPort: 8081
   service:
     type: ClusterIP
@@ -107,13 +107,13 @@ modelService:
     versionLabel: v2
     image:
       repository: ""
-      tag: ""
-      pullPolicy: ""
+      tag: "latest"
+      pullPolicy: Always
     resources: {}
     podAnnotations: {}
     mirror:
       enabled: true
-      percent: 10  
+      percent: 10
 
 # Ingress Configuration
 ingress:

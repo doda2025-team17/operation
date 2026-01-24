@@ -58,6 +58,26 @@ docker login ghcr.io
 # Password: YOUR_PAT
 ```
 
+### **Force Kubernetes to pull new images:**
+```bash
+   cd ~/Desktop/DODA/operation
+   export KUBECONFIG=vm/kubeconfig
+   kubectl rollout restart deployment -n sms-app
+```
+
+### **Verify:**
+```bash
+   # Watch pods restart
+   kubectl get pods -n sms-app -w
+
+   # Check logs for new version
+   kubectl logs -n sms-app -l app.kubernetes.io/name=sms-app-app --tail=10
+
+   # Test endpoint
+   kubectl port-forward -n sms-app svc/sms-app-app 8080:80
+   curl http://localhost:8080/metrics
+```
+
 ## Deploy Configurations
 
 ### Basic (App Only)
@@ -275,26 +295,110 @@ If dashboards are not auto-provisioned or you want to import them manually:
 
 ## Testing
 
-### Test Alerting
+### Test Metrics Endpoint
+
+Verify that the custom Prometheus metrics are being exposed correctly:
 
 ```bash
-# Terminal 1: Port-forward app
+# Terminal 1: Port-forward to app service
 export KUBECONFIG=vm/kubeconfig
-
 kubectl port-forward svc/sms-app-app 8080:80 -n sms-app
-
-# Terminal 2: Generate traffic (triggers HighRequestRate alert after 2min)
-export KUBECONFIG=vm/kubeconfig
-
-end=$((SECONDS+150))
-while [ $SECONDS -lt $end ]; do
-  for i in {1..40}; do curl -s http://localhost:8080/ >/dev/null & done
-  wait
-  sleep 1
-done
 ```
 
-Check alerts at http://localhost:9090/alerts (should show Firing after ~2 min).
+```bash
+# Terminal 2: Test metrics endpoint
+curl http://localhost:8080/metrics
+```
+
+Expected output should include:
+- `sms_messages_classified_total` (Counter with labels: result, source, dashboard_version)
+- `sms_active_requests` (Gauge with labels: endpoint, dashboard_version)
+- `sms_request_latency_seconds_bucket` (Histogram with labels: endpoint, dashboard_version)
+- `sms_cache_hits_total`, `sms_cache_misses_total`, `sms_model_calls_total` (Counters)
+
+### Test SMS Classification (Generate Metrics Data)
+
+The metrics are only recorded when making classification requests to `POST /sms`. 
+Requests to `/` (root) do NOT generate metrics.
+
+```bash
+# Terminal 1: Port-forward to app service (if not already running)
+export KUBECONFIG=vm/kubeconfig
+kubectl port-forward svc/sms-app-app 8080:80 -n sms-app
+```
+
+```bash
+# Terminal 2: Generate classification requests
+# Single request:
+curl -X POST http://localhost:8080/sms \
+  -H "Content-Type: application/json" \
+  -d '{"sms": "Congratulations! You won a FREE iPhone! Call now!"}'
+
+# Multiple requests to populate metrics:
+for i in {1..20}; do
+  curl -s -X POST http://localhost:8080/sms \
+    -H "Content-Type: application/json" \
+    -d '{"sms": "FREE PRIZE! Call now to claim your reward!"}' &
+done
+wait
+echo "Done generating traffic!"
+
+# Verify metrics increased:
+curl -s http://localhost:8080/metrics | grep -E "classified_total|latency_seconds_count"
+```
+
+Expected output after traffic:
+```
+sms_messages_classified_total{result="spam",source="web",dashboard_version="v1"} 20
+sms_request_latency_seconds_count{endpoint="/sms",dashboard_version="v1"} 20
+```
+
+### Test Alerting
+
+The `HighRequestRate` alert fires when the app receives more than 15 requests/minute for 2+ minutes.
+
+**Important:** You must send requests to `POST /sms` (not `/`) for metrics to be recorded!
+
+```bash
+# Terminal 1: Port-forward to app service
+export KUBECONFIG=vm/kubeconfig
+kubectl port-forward svc/sms-app-app 8080:80 -n sms-app
+```
+
+```bash
+# Terminal 2: Generate sustained traffic for 2.5 minutes (triggers HighRequestRate alert)
+export KUBECONFIG=vm/kubeconfig
+
+echo "Generating traffic to trigger alert (2.5 minutes)..."
+end=$((SECONDS+150))
+while [ $SECONDS -lt $end ]; do
+  for i in {1..20}; do
+    curl -s -X POST http://localhost:8080/sms \
+      -H "Content-Type: application/json" \
+      -d '{"sms": "Test message '$i'"}' > /dev/null &
+  done
+  wait
+  echo "Requests sent at $(date +%H:%M:%S)..."
+  sleep 2
+done
+echo "Traffic generation complete!"
+```
+
+```bash
+# Terminal 3: Monitor alert status in Prometheus
+export KUBECONFIG=vm/kubeconfig
+kubectl port-forward svc/sms-app-kube-prometheus-st-prometheus 9090:9090 -n sms-app
+```
+
+Then open http://localhost:9090/alerts in your browser. The `HighRequestRate` alert should:
+1. Show as **Pending** after ~1 minute of traffic
+2. Show as **Firing** after 2 minutes of sustained traffic
+
+You can also query the metric directly in Prometheus:
+```promql
+sum(rate(sms_messages_classified_total{namespace="sms-app"}[1m])) * 60
+```
+This should show a value > 15 while traffic is being generated.
 
 ### Email Alerting Configuration
 
@@ -320,6 +424,43 @@ helm upgrade --install sms-app helm/chart -n sms-app \
   --set alerting.email.smarthost="smtp.gmail.com:587" \
   --set kube-prometheus-stack.enabled=true
 ```
+
+### Test Prometheus Scraping
+
+Verify Prometheus is collecting metrics from your services:
+
+```bash
+# Port-forward to Prometheus
+export KUBECONFIG=vm/kubeconfig
+kubectl port-forward svc/sms-app-kube-prometheus-st-prometheus 9090:9090 -n sms-app
+```
+
+1. Open http://localhost:9090
+2. Go to **Status → Targets**
+3. Look for `serviceMonitor/sms-app/sms-app-app` - should show **UP**
+4. Try these queries in the query box:
+   - `sms_messages_classified_total` - classification counter
+   - `sms_active_requests` - current active requests gauge
+   - `rate(sms_request_latency_seconds_count[5m])` - request rate
+   - `histogram_quantile(0.95, rate(sms_request_latency_seconds_bucket[5m]))` - p95 latency
+
+### Test Grafana Dashboards
+
+1. Open http://grafana.local
+2. Login: admin / admin (skip password change)
+3. Go to **Dashboards** → Look for **SMS App** folder
+4. Open **SMS App Metrics** dashboard
+
+If dashboards are empty:
+- Make sure you've generated traffic using `POST /sms` (see above)
+- Check time range is set to "Last 15 minutes" or "Last 1 hour"
+- Click the refresh button (🔄) in the top right
+- Verify Prometheus datasource is working: **Connections → Data sources → Prometheus → Test**
+
+To test queries directly in Grafana:
+1. Click **Explore** (compass icon)
+2. Select **Prometheus** datasource
+3. Try: `sms_messages_classified_total{namespace="sms-app"}`
 
 ### Test Istio Canary Routing
 
@@ -348,91 +489,25 @@ curl -b cookies.txt -H "Host: sms-istio.local" http://$INGRESS_IP/  # Same versi
 kubectl get vs -n sms-app -o yaml | grep -A 30 "http:"
 ```
 
-### Test Grafana
+### Test Canary Metrics Comparison
 
-1. Open http://grafana.local
-2. Login: admin / admin (skip password change)
-3. Go to Dashboards → SMS App
-4. Verify metrics are showing
-
-## Notes
-
-### Images
-
-Override image tags for pinned releases:
-```bash
-helm upgrade --install sms-app helm/chart -n sms-app \
-  --set app.image.tag=v1.0.0 \
-  --set modelService.image.tag=v1.0.0
-```
-
-### Ingress
-
-To change hostname:
-```bash
-helm upgrade --install sms-app helm/chart -n sms-app \
-  --set 'ingress.hosts[0].host=myapp.example.com'
-```
-
-### HostPath Volume
+To verify canary (v2) vs stable (v1) metrics are being recorded separately:
 
 ```bash
-# Disable volume
-helm upgrade --install sms-app helm/chart -n sms-app \
-  --set modelService.volume.enabled=false
+# Generate traffic through Istio (this distributes to both v1 and v2)
+INGRESS_IP=$(kubectl get svc istio-ingressgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
-# Change path
-helm upgrade --install sms-app helm/chart -n sms-app \
-  --set modelService.volume.hostPath=/custom/path
+for i in {1..30}; do
+  curl -s -X POST -H "Host: sms-istio.local" http://$INGRESS_IP/sms \
+    -H "Content-Type: application/json" \
+    -d '{"sms": "Test message"}' > /dev/null &
+done
+wait
 ```
 
-### Image Pull Secrets
-
-```bash
-kubectl create secret docker-registry ghcr-cred -n sms-app \
-  --docker-server=ghcr.io \
-  --docker-username=YOUR_GITHUB_USER \
-  --docker-password=YOUR_PAT
-
-helm upgrade --install sms-app helm/chart -n sms-app \
-  --set "imagePullSecrets[0].name=ghcr-cred"
+Then in Prometheus (http://localhost:9090), query:
+```promql
+sum by (version, dashboard_version) (sms_messages_classified_total{namespace="sms-app"})
 ```
 
-## Troubleshooting
-
-### KVM kernel extension error
-Run
-```bash
-sudo modprobe -r kvm_amd kvm
-```
-or (if the first one doesn't work)
-```bash
-echo -e "blacklist kvm\nblacklist kvm_amd" | sudo tee /etc/modprobe.d/blacklist-kvm.conf
-```
-
-### Helm upgrade hangs
-```bash
-kubectl delete jobs -n sms-app -l app.kubernetes.io/component=admission-webhook
-helm rollback sms-app <last-working-revision> -n sms-app
-```
-
-### Pods not starting
-```bash
-kubectl get pods -n sms-app
-kubectl describe pod <pod-name> -n sms-app
-kubectl logs <pod-name> -n sms-app
-```
-
-### Namespace ownership error
-```bash
-kubectl delete namespace sms-app
-# Wait for deletion, then redeploy
-```
-
-### Grafana crashing
-Check logs:
-```bash
-kubectl logs -n sms-app -l app.kubernetes.io/name=grafana -c grafana
-```
-
-Common fix — duplicate datasource error: remove custom datasources from values.yaml (kube-prometheus-stack handles it).
+You should see separate counts for `v1` and `v2`.
