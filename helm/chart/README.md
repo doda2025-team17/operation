@@ -228,6 +228,51 @@ curl http://sms-app.local
 | Prometheus | http://localhost:9090 | port forward: `kubectl port-forward svc/sms-app-kube-prometheus-st-prometheus 9090:9090 -n sms-app` (run `export KUBECONFIG=vm/kubeconfig` before) | 
 | AlertManager | http://localhost:9093 | port forward `kubectl port-forward svc/sms-app-kube-prometheus-st-alertmanager 9093:9093 -n sms-app` (run `export KUBECONFIG=vm/kubeconfig ` before) |
 
+## Grafana Dashboards
+
+### Automatic Installation (Default)
+
+When deployed with `kube-prometheus-stack.grafana.enabled=true`, dashboards are automatically provisioned via ConfigMaps. They appear under **Dashboards → SMS App** folder.
+
+### Manual Import (Alternative)
+
+If dashboards are not auto-provisioned or you want to import them manually:
+
+1. Extract the dashboard JSON from the Helm templates:
+```bash
+   # App metrics dashboard
+   helm template sms-app helm/chart \
+     --set monitoring.enabled=true \
+     --set kube-prometheus-stack.grafana.enabled=true \
+     -s templates/grafana-app-configmap.yaml | \
+     grep -A 9999 'sms-app-metrics.json' | tail -n +2 > sms-app-metrics.json
+
+   # Experiment dashboard
+   helm template sms-app helm/chart \
+     --set monitoring.enabled=true \
+     --set kube-prometheus-stack.grafana.enabled=true \
+     -s templates/grafana-experiment-configmap.yaml | \
+     grep -A 9999 'sms-app-experiment.json' | tail -n +2 > sms-app-experiment.json
+```
+
+2. Open Grafana: http://grafana.local (login: admin/admin)
+
+3. Go to **Dashboards → Import**
+
+4. Click **Upload JSON file** and select the extracted JSON file
+
+5. Select **Prometheus** as the datasource when prompted
+
+6. Click **Import**
+
+### Available Dashboards
+
+| Dashboard | Description |
+|-----------|-------------|
+| SMS App Metrics | Main dashboard with classification metrics, latency, cache stats |
+| SMS App Experiment | Canary vs stable comparison for A4 experiment decisions |
+
+
 ## Testing
 
 ### Test Alerting
