@@ -14,7 +14,10 @@ Deploys the SMS spam detection stack (Spring Boot app + Python model service) to
 ```bash
 # Setup (once) -> run from operation folder
 export KUBECONFIG=vm/kubeconfig
-echo "192.168.56.95 sms-app.local grafana.local dashboard.local" | sudo tee -a /etc/hosts
+
+NGINX_IP=$(kubectl -n sms-app get ingress sms-app-grafana -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+sudo sed -i '/grafana\.local/d;/dashboard\.local/d' /etc/hosts
+echo "$NGINX_IP grafana.local dashboard.local" | sudo tee -a /etc/hosts
 
 ISTIO_IP=$(kubectl -n istio-system get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 sudo sed -i '/sms-app\.local/d;/stable\.sms-app\.local/d;/canary\.sms-app\.local/d;/grafana\.local/d' /etc/hosts
@@ -128,7 +131,12 @@ helm upgrade --install sms-app helm/chart -n sms-app \
   --set kube-prometheus-stack.nodeExporter.enabled=true \
   --set istio.enabled=true \
   --set app.canary.enabled=true \
-  --set "istio.hosts[0]=sms-istio.local"
+  --set 'istio.hosts[0]=sms-app.local' \
+  --set 'istio.hosts[1]=stable.sms-app.local' \
+  --set 'istio.hosts[2]=canary.sms-app.local' \
+  --set istio.hostRouting.experiment=sms-app.local \
+  --set istio.hostRouting.stable=stable.sms-app.local \
+  --set istio.hostRouting.canary=canary.sms-app.local
 
 kubectl label ns sms-app istio-injection=enabled --overwrite
 ```
@@ -149,9 +157,41 @@ helm upgrade --install sms-app helm/chart -n sms-app --create-namespace \
   --set modelService.shadow.versionLabel=v2 \
   --set modelService.shadow.image.tag=latest \
   --set modelService.shadow.mirror.percent=25 \
-  --set "istio.hosts[0]=sms-istio.local"
-
+  --set 'istio.hosts[0]=sms-app.local' \
+  --set 'istio.hosts[1]=stable.sms-app.local' \
+  --set 'istio.hosts[2]=canary.sms-app.local' \
+  --set istio.hostRouting.experiment=sms-app.local \
+  --set istio.hostRouting.stable=stable.sms-app.local \
+  --set istio.hostRouting.canary=canary.sms-app.local
+  
 kubectl label ns sms-app istio-injection=enabled --overwrite
+```
+
+### With Istio Shadow Launch and Monitoring (For Dashboard)
+```bash
+
+helm upgrade --install sms-app helm/chart -n sms-app --create-namespace \
+  --set secrets.smtpPassword=whatever \
+  --set monitoring.enabled=true \
+  --set kube-prometheus-stack.enabled=true \
+  --set kube-prometheus-stack.prometheus.enabled=true \
+  --set kube-prometheus-stack.grafana.enabled=true \
+  --set kube-prometheus-stack.grafana.ingress.enabled=true \
+  --set kube-prometheus-stack.grafana.ingress.ingressClassName=nginx \
+  --set 'kube-prometheus-stack.grafana.ingress.hosts[0]=grafana.local' \
+  --set istio.enabled=true \
+  --set modelService.shadow.enabled=true \
+  --set modelService.versionLabel=v1 \
+  --set modelService.shadow.versionLabel=v2 \
+  --set modelService.shadow.mirror.percent=25 \
+  --set 'istio.hosts[0]=sms-app.local' \
+  --set 'istio.hosts[1]=stable.sms-app.local' \
+  --set 'istio.hosts[2]=canary.sms-app.local' \
+  --set istio.hostRouting.experiment=sms-app.local \
+  --set istio.hostRouting.stable=stable.sms-app.local \
+  --set istio.hostRouting.canary=canary.sms-app.local
+  --set modelService.canary.enabled=false
+
 ```
 
 Test the mirror (example):

@@ -21,6 +21,9 @@ spec:
     - name: {{ .Values.istio.canary.canarySubset }}
       labels:
         {{ .Values.istio.canary.subsetLabelKey }}: {{ .Values.istio.canary.canarySubset }}
+    - name: shadow
+      labels:
+        {{ .Values.istio.modelRouting.subsetLabelKey }}: {{ .Values.modelService.shadow.versionLabel }}
 ---
 apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
