@@ -1,7 +1,12 @@
 # Namespace settings
 namespace:
-  create: true
+  create: false
   name: sms-app
+
+secrets:
+  create: true
+  existingSecretName: smtp-credentials
+  smtpPassword: ""
 
 imagePullSecrets: []
 nameOverride: ""
