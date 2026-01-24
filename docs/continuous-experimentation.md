@@ -8,7 +8,7 @@ Two versions of both services are deployed simultaneously:
 
 | Service | Stable (v1) | Canary (v2) |
 |----------|-------------|--------------|
-| app-service | No cache | TTL-based in-memory cache |
+| app | No cache | TTL-based in-memory cache |
 | model-service | Baseline | Identical logic (instrumented with version header) |
 
 Istio DestinationRules and VirtualServices ensure **consistent routing**, so:
