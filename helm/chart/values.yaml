@@ -104,7 +104,7 @@ modelService:
   shadow:
     enabled: false
     replicaCount: 1
-    versionLabel: v2
+    versionLabel: shadow
     image:
       repository: ""
       tag: "latest"

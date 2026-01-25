@@ -14,7 +14,10 @@ Deploys the SMS spam detection stack (Spring Boot app + Python model service) to
 ```bash
 # Setup (once) -> run from operation folder
 export KUBECONFIG=vm/kubeconfig
-echo "192.168.56.95 sms-app.local grafana.local dashboard.local" | sudo tee -a /etc/hosts
+
+NGINX_IP=$(kubectl -n sms-app get ingress sms-app-grafana -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+sudo sed -i '/grafana\.local/d;/dashboard\.local/d' /etc/hosts
+echo "$NGINX_IP grafana.local dashboard.local" | sudo tee -a /etc/hosts
 
 ISTIO_IP=$(kubectl -n istio-system get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 sudo sed -i '/sms-app\.local/d;/stable\.sms-app\.local/d;/canary\.sms-app\.local/d;/grafana\.local/d' /etc/hosts
@@ -128,7 +131,12 @@ helm upgrade --install sms-app helm/chart -n sms-app \
   --set kube-prometheus-stack.nodeExporter.enabled=true \
   --set istio.enabled=true \
   --set app.canary.enabled=true \
-  --set "istio.hosts[0]=sms-istio.local"
+  --set 'istio.hosts[0]=sms-app.local' \
+  --set 'istio.hosts[1]=stable.sms-app.local' \
+  --set 'istio.hosts[2]=canary.sms-app.local' \
+  --set istio.hostRouting.experiment=sms-app.local \
+  --set istio.hostRouting.stable=stable.sms-app.local \
+  --set istio.hostRouting.canary=canary.sms-app.local
 
 kubectl label ns sms-app istio-injection=enabled --overwrite
 ```
@@ -149,8 +157,13 @@ helm upgrade --install sms-app helm/chart -n sms-app --create-namespace \
   --set modelService.shadow.versionLabel=v2 \
   --set modelService.shadow.image.tag=latest \
   --set modelService.shadow.mirror.percent=25 \
-  --set "istio.hosts[0]=sms-istio.local"
-
+  --set 'istio.hosts[0]=sms-app.local' \
+  --set 'istio.hosts[1]=stable.sms-app.local' \
+  --set 'istio.hosts[2]=canary.sms-app.local' \
+  --set istio.hostRouting.experiment=sms-app.local \
+  --set istio.hostRouting.stable=stable.sms-app.local \
+  --set istio.hostRouting.canary=canary.sms-app.local
+  
 kubectl label ns sms-app istio-injection=enabled --overwrite
 ```
 
@@ -181,6 +194,7 @@ http://localhost:9090
 sum by (version,source) (rate(sms_model_predictions_total{namespace="sms-app"}[1m])) 
 
 ```
+
 
 ## Uninstall
 
@@ -339,7 +353,7 @@ curl -X POST http://localhost:8080/sms \
   -H "Content-Type: application/json" \
   -d '{"sms": "Congratulations! You won a FREE iPhone! Call now!"}'
 
-# Multiple requests to populate metrics:
+# 20 requests to populate metrics:
 for i in {1..20}; do
   curl -s -X POST http://localhost:8080/sms \
     -H "Content-Type: application/json" \
@@ -347,6 +361,15 @@ for i in {1..20}; do
 done
 wait
 echo "Done generating traffic!"
+
+# 200 requests:
+for i in {1..200}; do
+  curl -s -X POST http://localhost:8080/sms \
+    -H "Content-Type: application/json" \
+    -d "{\"sms\":\"load $i\"}" > /dev/null &
+done
+wait
+echo done
 
 # Verify metrics increased:
 curl -s http://localhost:8080/metrics | grep -E "classified_total|latency_seconds_count"
