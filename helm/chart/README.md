@@ -167,33 +167,6 @@ helm upgrade --install sms-app helm/chart -n sms-app --create-namespace \
 kubectl label ns sms-app istio-injection=enabled --overwrite
 ```
 
-### With Istio Shadow Launch and Monitoring (For Dashboard)
-```bash
-
-helm upgrade --install sms-app helm/chart -n sms-app --create-namespace \
-  --set secrets.smtpPassword=whatever \
-  --set monitoring.enabled=true \
-  --set kube-prometheus-stack.enabled=true \
-  --set kube-prometheus-stack.prometheus.enabled=true \
-  --set kube-prometheus-stack.grafana.enabled=true \
-  --set kube-prometheus-stack.grafana.ingress.enabled=true \
-  --set kube-prometheus-stack.grafana.ingress.ingressClassName=nginx \
-  --set 'kube-prometheus-stack.grafana.ingress.hosts[0]=grafana.local' \
-  --set istio.enabled=true \
-  --set modelService.shadow.enabled=true \
-  --set modelService.versionLabel=v1 \
-  --set modelService.shadow.versionLabel=v2 \
-  --set modelService.shadow.mirror.percent=25 \
-  --set 'istio.hosts[0]=sms-app.local' \
-  --set 'istio.hosts[1]=stable.sms-app.local' \
-  --set 'istio.hosts[2]=canary.sms-app.local' \
-  --set istio.hostRouting.experiment=sms-app.local \
-  --set istio.hostRouting.stable=stable.sms-app.local \
-  --set istio.hostRouting.canary=canary.sms-app.local
-  --set modelService.canary.enabled=false
-
-```
-
 Test the mirror (example):
 ```bash
 # Send from a meshed client to the model service DNS name (You can open a new terminal and go to "operation" root)
@@ -221,12 +194,6 @@ http://localhost:9090
 sum by (version,source) (rate(sms_model_predictions_total{namespace="sms-app"}[1m])) 
 
 ```
-
-Try:
-```bash
-for i in {1..50}; do   curl -s -X POST http://localhost:8080/sms     -H "Content-Type: application/json"     -d "{\"sms\":\"shadow test $i\"}" > /dev/null; done
-```
-Then open the corresponding Grafana Dashboard.
 
 
 ## Uninstall

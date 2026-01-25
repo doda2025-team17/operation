@@ -39,4 +39,8 @@ spec:
     - name: {{ .Values.istio.canary.canarySubset }}
       labels:
         {{ .Values.istio.modelRouting.subsetLabelKey }}: {{ .Values.istio.canary.canarySubset }}
+    - name: shadow
+      labels:
+        {{ .Values.istio.modelRouting.subsetLabelKey }}: {{ .Values.modelService.shadow.versionLabel }}
+
 {{- end }}
