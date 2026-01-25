@@ -16,13 +16,13 @@ spec:
       app.kubernetes.io/name: {{ include "sms-app.app.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
   endpoints:
-    - port: http
+    - port: metrics
       path: {{ .Values.monitoring.paths.app }}
       interval: {{ .Values.monitoring.scrapeInterval }}
       scheme: http
       relabelings:
         - sourceLabels: [__meta_kubernetes_pod_label_version]
-          targetLabel: pod_version
+          targetLabel: version
         - sourceLabels: [__meta_kubernetes_pod_name]
           targetLabel: pod
 {{- end }}

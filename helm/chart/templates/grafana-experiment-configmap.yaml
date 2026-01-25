@@ -44,8 +44,8 @@ data:
           "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
           "targets": [
             {
-              "expr": "sum by (dashboard_version) (rate(sms_model_calls_total{namespace=\"{{ .Values.namespace.name }}\"}[5m])) * 60",
-              "legendFormat": "v{{`{{dashboard_version}}`}}",
+              "expr": "sum by (version) (rate(sms_model_calls_total{namespace=\"{{ .Values.namespace.name }}\"}[5m])) * 60",
+              "legendFormat": "v{{`{{version}}`}}",
               "refId": "A"
             }
           ]
@@ -59,8 +59,8 @@ data:
           "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
           "targets": [
             {
-              "expr": "sum by (dashboard_version) (rate(sms_cache_hits_total{namespace=\"{{ .Values.namespace.name }}\"}[5m])) * 60",
-              "legendFormat": "v{{`{{dashboard_version}}`}}",
+              "expr": "sum by (version) (rate(sms_cache_hits_total{namespace=\"{{ .Values.namespace.name }}\"}[5m])) * 60",
+              "legendFormat": "v{{`{{version}}`}}",
               "refId": "A"
             }
           ]
@@ -74,8 +74,8 @@ data:
           "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
           "targets": [
             {
-              "expr": "sum by (dashboard_version) (rate(sms_cache_misses_total{namespace=\"{{ .Values.namespace.name }}\"}[5m])) * 60",
-              "legendFormat": "v{{`{{dashboard_version}}`}}",
+              "expr": "sum by (version) (rate(sms_cache_misses_total{namespace=\"{{ .Values.namespace.name }}\"}[5m])) * 60",
+              "legendFormat": "v{{`{{version}}`}}",
               "refId": "A"
             }
           ]
@@ -89,8 +89,8 @@ data:
           "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
           "targets": [
             {
-              "expr": "sum by (dashboard_version) (rate(sms_cache_hits_total{namespace=\"{{ .Values.namespace.name }}\"}[5m])) / (sum by (dashboard_version) (rate(sms_cache_hits_total{namespace=\"{{ .Values.namespace.name }}\"}[5m])) + sum by (dashboard_version) (rate(sms_cache_misses_total{namespace=\"{{ .Values.namespace.name }}\"}[5m])))",
-              "legendFormat": "v{{`{{dashboard_version}}`}}",
+              "expr": "sum by (version) (rate(sms_cache_hits_total{namespace=\"{{ .Values.namespace.name }}\"}[5m])) / (sum by (version) (rate(sms_cache_hits_total{namespace=\"{{ .Values.namespace.name }}\"}[5m])) + sum by (version) (rate(sms_cache_misses_total{namespace=\"{{ .Values.namespace.name }}\"}[5m])))",
+              "legendFormat": "v{{`{{version}}`}}",
               "refId": "A"
             }
           ]
@@ -104,8 +104,8 @@ data:
           "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
           "targets": [
             {
-              "expr": "histogram_quantile(0.95, sum by (le, dashboard_version) (rate(sms_request_latency_seconds_bucket{namespace=\"{{ .Values.namespace.name }}\"}[5m])))",
-              "legendFormat": "v{{`{{dashboard_version}}`}} p95",
+              "expr": "histogram_quantile(0.95, sum by (le, version) (rate(sms_request_latency_seconds_bucket{namespace=\"{{ .Values.namespace.name }}\"}[5m])))",
+              "legendFormat": "v{{`{{version}}`}} p95",
               "refId": "A"
             }
           ]
@@ -119,8 +119,8 @@ data:
           "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
           "targets": [
             {
-              "expr": "sum by (dashboard_version) (sms_active_requests{namespace=\"{{ .Values.namespace.name }}\"})",
-              "legendFormat": "v{{`{{dashboard_version}}`}}",
+              "expr": "sum by (version) (sms_active_requests{namespace=\"{{ .Values.namespace.name }}\"})",
+              "legendFormat": "v{{`{{version}}`}}",
               "refId": "A"
             }
           ]

@@ -3,7 +3,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: {{ include "sms-app.model.name" . }}
-  namespace: {{ .Values.monitoring.serviceMonitor.namespace | default ( .Values.namespace.name | default .Release.Namespace ) }}
+  namespace: {{ .Values.monitoring.serviceMonitor.namespace | default (.Values.namespace.name | default .Release.Namespace) }}
   labels:
     {{- include "sms-app.labels" . | nindent 4 }}
     {{ .Values.monitoring.serviceMonitor.labelKey }}: {{ .Values.monitoring.serviceMonitor.labelValue }}
@@ -22,7 +22,7 @@ spec:
       scheme: http
       relabelings:
         - sourceLabels: [__meta_kubernetes_pod_label_version]
-          targetLabel: pod_version
+          targetLabel: version
         - sourceLabels: [__meta_kubernetes_pod_name]
           targetLabel: pod
 {{- end }}
