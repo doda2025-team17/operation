@@ -122,7 +122,7 @@ ingress:
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
   hosts:
-    - host: sms-app.local
+    - host: sms-nginx.local
       paths:
         - path: /
           pathType: Prefix
