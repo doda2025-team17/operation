@@ -238,9 +238,9 @@ No work.
 
 ### Nicholas
 
-- Work on the Final Presentation
-- Updated the readme.md file
-- Reviewed PR [#73]
+- Worked on the Final Presentation, mainly setting up the structure and preparing the demo.
+- Updated the readme.md file with the presentation link
+- Reviewed PR [#73](https://github.com/doda2025-team17/operation/pull/73)
 
 ## Week Q4.10 (Jan. 26 - 30)
 
