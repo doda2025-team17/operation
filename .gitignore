@@ -3,3 +3,6 @@ vm/kubeconfig
 vm/ansible/vm-ssh-keys
 helm/chart/secrets.yaml
 cookies.txt
+
+# For Minikube - Ignore Istio installation files
+istio-1.28.3/

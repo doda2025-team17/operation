@@ -231,7 +231,7 @@
                           port:
                             number: 443
 
-    - name: Wait for any Dashboard pod to be Ready (up to 5m)
+    - name: Wait for any Dashboard pod to be Ready
       command: >
         kubectl wait -n {{ kd_ns }} --for=condition=Ready pod
         -l app.kubernetes.io/instance={{ kd_release }}

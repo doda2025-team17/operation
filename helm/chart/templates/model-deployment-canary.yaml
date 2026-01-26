@@ -1,4 +1,4 @@
-{{- if and .Values.istio.enabled .Values.modelService.canary.enabled }}
+{{- if and .Values.istio.enabled .Values.modelService.canary.enabled (not .Values.modelService.shadow.enabled) }}
 {{- $namespace := .Values.namespace.name | default .Release.Namespace }}
 {{- $repo := .Values.modelService.canary.image.repository | default .Values.modelService.image.repository }}
 {{- $tag := .Values.modelService.canary.image.tag | default .Values.modelService.image.tag }}

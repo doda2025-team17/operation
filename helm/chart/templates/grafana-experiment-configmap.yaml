@@ -9,196 +9,122 @@ metadata:
     grafana_dashboard: sms-app
   annotations:
     grafana_folder: "SMS App"
-data: # THIS IS ONLY AN EXAMPLE, WE SHOULD CUSTOMIZE IT BASED ON OUR EXPERIMENT METRICS in A4
+data:
   sms-app-experiment.json: |-
     {
-        "title": "Shadow vs Stable (Model Service)",
-        "panels": [
+      "title": "Continuous Experimentation (App v1 vs v2)",
+      "tags": ["sms-app", "experiment", "canary", "app"],
+      "timezone": "browser",
+      "schemaVersion": 38,
+      "style": "dark",
+      "uid": "sms-app-experiment",
+      "version": 1,
+      "refresh": "10s",
+      "time": { "from": "now-30m", "to": "now" },
+      "templating": {
+        "list": [
+          {
+            "name": "datasource",
+            "type": "datasource",
+            "query": "prometheus",
+            "refresh": 1,
+            "hide": 0,
+            "includeAll": false,
+            "current": { "selected": false, "text": "Prometheus", "value": "prometheus" }
+          }
+        ]
+      },
+      "panels": [
         {
-            "title": "Request Rate Comparison (v1 vs v2)",
-            "type": "timeseries",
-            "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
-            "datasource": { "type": "prometheus", "uid": "${datasource}" },
-            "fieldConfig": {
-                "defaults": {
-                "color": { "mode": "palette-classic" },
-                "unit": "reqpm"
-                }
-            },
-            "targets": [
-                {
-                "expr": "sum by (version,source) (rate(sms_model_predictions_total{namespace=\"{{ .Values.namespace.name }}\"}[5m])) * 60",
-                "legendFormat": "v{{`{{version}}`}} ({{`{{source}}`}})",
-                "refId": "A"
-                }
-            ]
-            },
+          "title": "Model Calls / min (lower is better)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "fieldConfig": { "defaults": { "unit": "reqpm" } },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+          "targets": [
             {
-            "title": "Request Rate by Source (app vs shadow)",
-            "type": "timeseries",
-            "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
-            "datasource": { "type": "prometheus", "uid": "${datasource}" },
-            "fieldConfig": {
-                "defaults": {
-                "color": { "mode": "palette-classic" },
-                "unit": "reqpm"
-                }
-            },
-            "targets": [
-                {
-                "expr": "sum by (version,source) (rate(sms_model_predictions_total{namespace=\"{{ .Values.namespace.name }}\"}[$__rate_interval])) * 60",
-                "legendFormat": "v{{`{{version}}`}} ({{`{{source}}`}})",
-                "refId": "A"
-                }
-            ]
-            },
-            {
-            "title": "Inflight Requests",
-            "type": "stat",
-            "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
-            "datasource": { "type": "prometheus", "uid": "${datasource}" },
-            "fieldConfig": {
-                "defaults": {
-                "color": { "mode": "palette-classic" },
-                "unit": "short"
-                }
-            },
-            "targets": [
-                {
-                "expr": "sum by (version,source) (sms_model_inflight_requests{namespace=\"{{ .Values.namespace.name }}\"})",
-                "legendFormat": "v{{`{{version}}`}} ({{`{{source}}`}}) inflight",
-                "refId": "A"
-                }
-            ]
-            },
-            {
-            "title": "Response Time p95 (s)",
-            "type": "bargauge",
-            "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
-            "datasource": { "type": "prometheus", "uid": "${datasource}" },
-            "fieldConfig": {
-                "defaults": {
-                "color": { "mode": "thresholds" },
-                "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                    { "color": "green", "value": null },
-                    { "color": "yellow", "value": 0.5 },
-                    { "color": "red", "value": 1 }
-                    ]
-                },
-                "unit": "s",
-                "min": 0,
-                "max": 2
-                }
-            },
-            "targets": [
-                {
-                "expr": "histogram_quantile(0.95, sum(rate(model_request_latency_seconds_bucket{namespace=\"{{ .Values.namespace.name }}\"}[5m])) by (le,version,source))",
-                "legendFormat": "p95 v{{`{{version}}`}} ({{`{{source}}`}})",
-                "refId": "A"
-                }
-            ]
-            },
-        {
-            "title": "Model Inference Latency Comparison",
-            "type": "timeseries",
-            "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
-            "datasource": { "type": "prometheus", "uid": "${datasource}" },
-            "fieldConfig": {
-                "defaults": {
-                "color": { "mode": "palette-classic" },
-                "unit": "s"
-                }
-            },
-            "targets": [
-                {
-                "expr": "histogram_quantile(0.95, sum(rate(model_inference_seconds_bucket{namespace=\"{{ .Values.namespace.name }}\"}[5m])) by (le,version,source))",
-                "legendFormat": "p95 v{{`{{version}}`}} ({{`{{source}}`}})",
-                "refId": "A"
-                }
-            ]
-            },
-            {
-            "title": "Avg Inference Time (s)",
-            "type": "timeseries",
-            "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
-            "datasource": { "type": "prometheus", "uid": "${datasource}" },
-            "fieldConfig": {
-                "defaults": {
-                "color": { "mode": "palette-classic" },
-                "unit": "s"
-                }
-            },
-            "targets": [
-                {
-                "expr": "sum by (version,source) (rate(sms_model_inference_seconds_sum{namespace=\"{{ .Values.namespace.name }}\"}[$__rate_interval])) / sum by (version,source) (rate(sms_model_predictions_total{namespace=\"{{ .Values.namespace.name }}\"}[$__rate_interval]))",
-                "legendFormat": "v{{`{{version}}`}} ({{`{{source}}`}}) avg",
-                "refId": "A"
-                }
-            ]
-            },
-            {
-            "title": "Inference Count (per min)",
-            "type": "timeseries",
-            "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
-            "datasource": { "type": "prometheus", "uid": "${datasource}" },
-            "fieldConfig": {
-                "defaults": {
-                "color": { "mode": "palette-classic" },
-                "unit": "reqpm"
-                }
-            },
-            "targets": [
-                {
-                "expr": "sum by (version,source) (rate(sms_model_inference_seconds_count{namespace=\"{{ .Values.namespace.name }}\"}[$__rate_interval])) * 60",
-                "legendFormat": "v{{`{{version}}`}} ({{`{{source}}`}}) inferences",
-                "refId": "A"
-                }
-            ]
-            },
-            {
-            "title": "Predictions Created (per min)",
-            "type": "timeseries",
-            "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
-            "datasource": { "type": "prometheus", "uid": "${datasource}" },
-            "fieldConfig": {
-                "defaults": {
-                "color": { "mode": "palette-classic" },
-                "unit": "reqpm"
-                }
-            },
-            "targets": [
-                {
-                "expr": "sum by (version) (rate(sms_model_predictions_created{namespace=\"{{ .Values.namespace.name }}\"}[$__rate_interval])) * 60",
-                "legendFormat": "v{{`{{version}}`}} created",
-                "refId": "A"
-                }
-            ]
+              "expr": "sum by (version) (rate(sms_model_calls_total{namespace=\"{{ .Values.namespace.name }}\"}[5m])) * 60",
+              "legendFormat": "{{`{{version}}`}}",
+              "refId": "A"
             }
-        ],
-        "refresh": "5s",
-        "schemaVersion": 38,
-        "style": "dark",
-        "tags": ["sms-app", "experiment", "canary"],
-        "templating": {
-            "list": [
-            {
-                "current": { "selected": false, "text": "Prometheus", "value": "prometheus" },
-                "hide": 0,
-                "includeAll": false,
-                "name": "datasource",
-                "options": [],
-                "query": "prometheus",
-                "refresh": 1,
-                "type": "datasource"
-            }
-            ]
+          ]
         },
-        "time": { "from": "now-1h", "to": "now" },
-        "timepicker": {},
-        "timezone": "browser",
-        "uid": "sms-app-experiment",
-        "version": 1
+        {
+          "title": "Cache Hits / min (higher is better)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "fieldConfig": { "defaults": { "unit": "reqpm" } },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+          "targets": [
+            {
+              "expr": "sum by (version) (rate(sms_cache_hits_total{namespace=\"{{ .Values.namespace.name }}\"}[5m])) * 60",
+              "legendFormat": "{{`{{version}}`}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "title": "Cache Misses / min (lower is better)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "fieldConfig": { "defaults": { "unit": "reqpm" } },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+          "targets": [
+            {
+              "expr": "sum by (version) (rate(sms_cache_misses_total{namespace=\"{{ .Values.namespace.name }}\"}[5m])) * 60",
+              "legendFormat": "{{`{{version}}`}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "title": "Cache Hit Ratio (higher is better)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 } },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+          "targets": [
+            {
+              "expr": "sum by (version) (rate(sms_cache_hits_total{namespace=\"{{ .Values.namespace.name }}\"}[5m])) / (sum by (version) (rate(sms_cache_hits_total{namespace=\"{{ .Values.namespace.name }}\"}[5m])) + sum by (version) (rate(sms_cache_misses_total{namespace=\"{{ .Values.namespace.name }}\"}[5m])))",
+              "legendFormat": "{{`{{version}}`}}",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "title": "SMS Request Latency p95 (seconds) (lower is better)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "fieldConfig": { "defaults": { "unit": "s" } },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, sum by (le, version) (rate(sms_request_latency_seconds_bucket{namespace=\"{{ .Values.namespace.name }}\"}[5m])))",
+              "legendFormat": "{{`{{version}}`}} p95",
+              "refId": "A"
+            }
+          ]
+        },
+        {
+          "title": "Active Requests (in-flight)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "fieldConfig": { "defaults": { "unit": "short", "min": 0 } },
+          "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
+          "targets": [
+            {
+              "expr": "sum by (version) (sms_active_requests{namespace=\"{{ .Values.namespace.name }}\"})",
+              "legendFormat": "{{`{{version}}`}}",
+              "refId": "A"
+            }
+          ]
+        }
+      ]
     }
 {{- end }}

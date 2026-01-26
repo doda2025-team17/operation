@@ -14,8 +14,15 @@ Deploys the SMS spam detection stack (Spring Boot app + Python model service) to
 ```bash
 # Setup (once) -> run from operation folder
 export KUBECONFIG=vm/kubeconfig
-echo "192.168.56.95 sms-app.local grafana.local dashboard.local" | sudo tee -a /etc/hosts
-echo "192.168.56.96 sms-istio.local" | sudo tee -a /etc/hosts
+
+NGINX_IP=$(kubectl -n sms-app get ingress sms-app-grafana -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+sudo sed -i '/grafana\.local/d;/dashboard\.local/d' /etc/hosts
+echo "$NGINX_IP grafana.local dashboard.local" | sudo tee -a /etc/hosts
+
+ISTIO_IP=$(kubectl -n istio-system get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+sudo sed -i '/sms-app\.local/d;/stable\.sms-app\.local/d;/canary\.sms-app\.local/d;/grafana\.local/d' /etc/hosts
+echo "$ISTIO_IP sms-app.local stable.sms-app.local canary.sms-app.local" | sudo tee -a /etc/hosts
+
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update
 helm dependency build helm/chart
@@ -58,6 +65,13 @@ docker login ghcr.io
 # Password: YOUR_PAT
 ```
 
+### Force Kubernetes to pull new images
+```bash
+   cd ~/Desktop/DODA/operation
+   export KUBECONFIG=vm/kubeconfig
+   kubectl rollout restart deployment -n sms-app
+```
+
 ## Deploy Configurations
 
 ### Basic (App Only)
@@ -69,7 +83,7 @@ helm upgrade --install sms-app helm/chart -n sms-app --create-namespace --set se
 ```bash
 # Create SMTP secret first (for email alerts)
 kubectl create namespace sms-app --dry-run=client -o yaml | kubectl apply -f -
-kubectl create secret generic smtp-credentials -n sms-app --from-literal=password='your-smtp-password'
+kubectl create secret generic smtp-credentials -n sms-app --from-literal=SMTP_PASSWORD='your-smtp-password'
 
 # Deploy with full monitoring stack
 helm upgrade --install sms-app helm/chart -n sms-app \
@@ -90,7 +104,12 @@ helm upgrade --install sms-app helm/chart -n sms-app \
   --set secrets.smtpPassword=whatever \
   --set istio.enabled=true \
   --set app.canary.enabled=true \
-  --set "istio.hosts[0]=sms-istio.local"
+  --set 'istio.hosts[0]=sms-app.local' \
+  --set 'istio.hosts[1]=stable.sms-app.local' \
+  --set 'istio.hosts[2]=canary.sms-app.local' \
+  --set istio.hostRouting.experiment=sms-app.local \
+  --set istio.hostRouting.stable=stable.sms-app.local \
+  --set istio.hostRouting.canary=canary.sms-app.local
 
 # Enable sidecar injection
 kubectl label ns sms-app istio-injection=enabled --overwrite
@@ -99,7 +118,7 @@ kubectl label ns sms-app istio-injection=enabled --overwrite
 ### Full Stack (Everything)
 ```bash
 kubectl create namespace sms-app --dry-run=client -o yaml | kubectl apply -f -
-kubectl create secret generic smtp-credentials -n sms-app --from-literal=password='your-smtp-password'
+kubectl create secret generic smtp-credentials -n sms-app --from-literal=SMTP_PASSWORD='your-smtp-password'
 
 helm upgrade --install sms-app helm/chart -n sms-app \
   --set secrets.smtpPassword=whatever \
@@ -112,7 +131,12 @@ helm upgrade --install sms-app helm/chart -n sms-app \
   --set kube-prometheus-stack.nodeExporter.enabled=true \
   --set istio.enabled=true \
   --set app.canary.enabled=true \
-  --set "istio.hosts[0]=sms-istio.local"
+  --set 'istio.hosts[0]=sms-app.local' \
+  --set 'istio.hosts[1]=stable.sms-app.local' \
+  --set 'istio.hosts[2]=canary.sms-app.local' \
+  --set istio.hostRouting.experiment=sms-app.local \
+  --set istio.hostRouting.stable=stable.sms-app.local \
+  --set istio.hostRouting.canary=canary.sms-app.local
 
 kubectl label ns sms-app istio-injection=enabled --overwrite
 ```
@@ -133,8 +157,13 @@ helm upgrade --install sms-app helm/chart -n sms-app --create-namespace \
   --set modelService.shadow.versionLabel=v2 \
   --set modelService.shadow.image.tag=latest \
   --set modelService.shadow.mirror.percent=25 \
-  --set "istio.hosts[0]=sms-istio.local"
-
+  --set 'istio.hosts[0]=sms-app.local' \
+  --set 'istio.hosts[1]=stable.sms-app.local' \
+  --set 'istio.hosts[2]=canary.sms-app.local' \
+  --set istio.hostRouting.experiment=sms-app.local \
+  --set istio.hostRouting.stable=stable.sms-app.local \
+  --set istio.hostRouting.canary=canary.sms-app.local
+  
 kubectl label ns sms-app istio-injection=enabled --overwrite
 ```
 
@@ -169,10 +198,16 @@ sum by (version,source) (rate(sms_model_predictions_total{namespace="sms-app"}[1
 
 ```
 
+
 ## Uninstall
 
 ```bash
 helm uninstall sms-app --namespace sms-app
+```
+
+## Delete Secret
+```bash
+kubectl delete secret smtp-credentials -n sms-app
 ```
 
 ## Verify Installation
@@ -210,6 +245,9 @@ curl http://sms-app.local
 | `ingress.enabled` | Enable NGINX ingress | `true` |
 | `ingress.className` | Ingress class | `nginx` |
 | `ingress.hosts[0].host` | Ingress hostname | `sms-app.local` |
+| `istio.hostRouting.experiment` | Host for weighted experiment traffic | `sms-app.local` |
+| `istio.hostRouting.stable` | Host forced to stable (v1) | `stable.sms-app.local` |
+| `istio.hostRouting.canary` | Host forced to canary (v2) | `canary.sms-app.local` |
 | `secrets.smtpPassword` | SMTP password | `CHANGE_ME_IN_HELM` |
 | `monitoring.enabled` | Enable ServiceMonitors | `false` |
 | `alerting.enabled` | Enable AlertManager config | `false` |
@@ -227,32 +265,165 @@ curl http://sms-app.local
 |---------|-----|-------|
 | App | http://sms-app.local | Via NGINX Ingress |
 | App (Istio) | http://sms-istio.local | Via Istio Gateway |
+| App (stable) | http://stable.sms-app.local | Always v1 |
+| App (canary) | http://canary.sms-app.local | Always v2 |
 | Grafana | http://grafana.local | Login: admin/admin |
 | Prometheus | http://localhost:9090 | port forward: `kubectl port-forward svc/sms-app-kube-prometheus-st-prometheus 9090:9090 -n sms-app` (run `export KUBECONFIG=vm/kubeconfig` before) | 
 | AlertManager | http://localhost:9093 | port forward `kubectl port-forward svc/sms-app-kube-prometheus-st-alertmanager 9093:9093 -n sms-app` (run `export KUBECONFIG=vm/kubeconfig ` before) |
 
+## Grafana Dashboards
+
+### Automatic Installation (Default)
+
+When deployed with `kube-prometheus-stack.grafana.enabled=true`, dashboards are automatically provisioned via ConfigMaps. They appear under **Dashboards → SMS App** folder.
+
+### Manual Import (Alternative)
+
+If dashboards are not auto-provisioned or you want to import them manually:
+
+1. Extract the dashboard JSON from the Helm templates:
+```bash
+   # App metrics dashboard
+   helm template sms-app helm/chart \
+     --set monitoring.enabled=true \
+     --set kube-prometheus-stack.grafana.enabled=true \
+     -s templates/grafana-app-configmap.yaml | \
+     grep -A 9999 'sms-app-metrics.json' | tail -n +2 > sms-app-metrics.json
+
+   # Experiment dashboard
+   helm template sms-app helm/chart \
+     --set monitoring.enabled=true \
+     --set kube-prometheus-stack.grafana.enabled=true \
+     -s templates/grafana-experiment-configmap.yaml | \
+     grep -A 9999 'sms-app-experiment.json' | tail -n +2 > sms-app-experiment.json
+```
+
+2. Open Grafana: http://grafana.local (login: admin/admin)
+
+3. Go to **Dashboards → Import**
+
+4. Click **Upload JSON file** and select the extracted JSON file
+
+5. Select **Prometheus** as the datasource when prompted
+
+6. Click **Import**
+
+### Available Dashboards
+
+| Dashboard | Description |
+|-----------|-------------|
+| SMS App Metrics | Main dashboard with classification metrics, latency, cache stats |
+| SMS App Experiment | Canary vs stable comparison for A4 experiment decisions |
+
+
 ## Testing
+
+### Test Metrics Endpoint
+
+Verify that the custom Prometheus metrics are being exposed correctly:
+
+```bash
+# Terminal 1: Port-forward to app service
+export KUBECONFIG=vm/kubeconfig
+kubectl port-forward svc/sms-app-app 8080:80 -n sms-app
+```
+
+```bash
+# Terminal 2: Test metrics endpoint
+curl http://localhost:8080/metrics
+```
+
+Expected output should include:
+- `sms_messages_classified_total` (Counter with labels: result, source, dashboard_version)
+- `sms_active_requests` (Gauge with labels: endpoint, dashboard_version)
+- `sms_request_latency_seconds_bucket` (Histogram with labels: endpoint, dashboard_version)
+- `sms_cache_hits_total`, `sms_cache_misses_total`, `sms_model_calls_total` (Counters)
+
+### Test SMS Classification (Generate Metrics Data)
+
+The metrics are only recorded when making classification requests to `POST /sms`.
+
+```bash
+# Terminal 1: Port-forward to app service (if not already running)
+export KUBECONFIG=vm/kubeconfig
+kubectl port-forward svc/sms-app-app 8080:80 -n sms-app
+```
+
+```bash
+# Terminal 2: Generate classification requests
+# Single request:
+curl -X POST http://localhost:8080/sms \
+  -H "Content-Type: application/json" \
+  -d '{"sms": "Congratulations! You won a FREE iPhone! Call now!"}'
+
+# 20 requests to populate metrics:
+for i in {1..20}; do
+  curl -s -X POST http://localhost:8080/sms \
+    -H "Content-Type: application/json" \
+    -d '{"sms": "FREE PRIZE! Call now to claim your reward!"}' &
+done
+wait
+echo "Done generating traffic!"
+
+# 200 requests:
+for i in {1..200}; do
+  curl -s -X POST http://localhost:8080/sms \
+    -H "Content-Type: application/json" \
+    -d "{\"sms\":\"load $i\"}" > /dev/null &
+done
+wait
+echo done
+
+# Verify metrics increased:
+curl -s http://localhost:8080/metrics | grep -E "classified_total|latency_seconds_count"
+```
+
+Expected output after traffic:
+```
+sms_messages_classified_total{result="spam",source="web",dashboard_version="v1"} 20
+sms_request_latency_seconds_count{endpoint="/sms",dashboard_version="v1"} 20
+```
 
 ### Test Alerting
 
+The `HighRequestRate` alert fires when the app receives more than 15 requests/minute for 2+ minutes.
+
+**Important:** You must send requests to `POST /sms` (not `/`) for metrics to be recorded!
+
 ```bash
-# Terminal 1: Port-forward app
+# Terminal 1: Port-forward to app service
 export KUBECONFIG=vm/kubeconfig
-
 kubectl port-forward svc/sms-app-app 8080:80 -n sms-app
-
-# Terminal 2: Generate traffic (triggers HighRequestRate alert after 2min)
-export KUBECONFIG=vm/kubeconfig
-
-end=$((SECONDS+150))
-while [ $SECONDS -lt $end ]; do
-  for i in {1..40}; do curl -s http://localhost:8080/ >/dev/null & done
-  wait
-  sleep 1
-done
 ```
 
-Check alerts at http://localhost:9090/alerts (should show Firing after ~2 min).
+```bash
+# Terminal 2: Generate sustained traffic for 2.5 minutes (triggers HighRequestRate alert)
+export KUBECONFIG=vm/kubeconfig
+
+echo "Generating traffic to trigger alert (2.5 minutes)..."
+end=$((SECONDS+150))
+while [ $SECONDS -lt $end ]; do
+  for i in {1..20}; do
+    curl -s -X POST http://localhost:8080/sms \
+      -H "Content-Type: application/json" \
+      -d '{"sms": "Test message '$i'"}' > /dev/null &
+  done
+  wait
+  echo "Requests sent at $(date +%H:%M:%S)..."
+  sleep 2
+done
+echo "Traffic generation complete!"
+```
+
+```bash
+# Terminal 3: Monitor alert status in Prometheus
+export KUBECONFIG=vm/kubeconfig
+kubectl port-forward svc/sms-app-kube-prometheus-st-prometheus 9090:9090 -n sms-app
+```
+
+Then open http://localhost:9090/alerts in your browser. The `HighRequestRate` alert should:
+1. Show as **Pending** after ~1 minute of traffic
+2. Show as **Firing** after 2 minutes of sustained traffic
 
 ### Email Alerting Configuration
 
@@ -279,24 +450,64 @@ helm upgrade --install sms-app helm/chart -n sms-app \
   --set kube-prometheus-stack.enabled=true
 ```
 
+### Test Prometheus Scraping
+
+Verify Prometheus is collecting metrics from your services:
+
+```bash
+# Port-forward to Prometheus
+export KUBECONFIG=vm/kubeconfig
+kubectl port-forward svc/sms-app-kube-prometheus-st-prometheus 9090:9090 -n sms-app
+```
+
+1. Open http://localhost:9090
+2. Go to **Status → Targets**
+3. Look for `serviceMonitor/sms-app/sms-app-app` - should show **UP**
+4. Try these queries in the query box:
+   - `sms_messages_classified_total` - classification counter
+   - `sms_active_requests` - current active requests gauge
+   - `rate(sms_request_latency_seconds_count[5m])` - request rate
+   - `histogram_quantile(0.95, rate(sms_request_latency_seconds_bucket[5m]))` - p95 latency
+
+### Test Grafana Dashboards
+
+1. Open http://grafana.local
+2. Login: admin / admin (skip password change)
+3. Go to **Dashboards** → Look for **SMS App** folder
+4. Open **SMS App Metrics** dashboard
+
+If dashboards are empty:
+- Make sure you've generated traffic using `POST /sms` (see above)
+- Check time range is set to "Last 15 minutes" or "Last 1 hour"
+- Click the refresh button in the top right
+- Verify Prometheus datasource is working: **Connections → Data sources → Prometheus → Test**
+
+To test queries directly in Grafana:
+1. Click **Explore** (compass icon)
+2. Select **Prometheus** datasource
+3. Try: `sms_messages_classified_total{namespace="sms-app"}`
+
 ### Test Istio Canary Routing
 
 ```bash
 # Get Istio IngressGateway IP
 INGRESS_IP=$(kubectl get svc istio-ingressgateway -n istio-system -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
-echo $INGRESS_IP  # Should be 192.168.56.96
+echo $INGRESS_IP
 
-# Test basic access
-curl -H "Host: sms-istio.local" http://$INGRESS_IP/
+# Force stable
+curl -H "Host: stable.sms-app.local" http://$INGRESS_IP/
+
+# Force canary
+curl -H "Host: canary.sms-app.local" http://$INGRESS_IP/
+
+# Experiment traffic (weighted)
+curl -H "Host: sms-app.local" http://$INGRESS_IP/
 
 # Test weighted routing (run 10 times, ~90% v1, ~10% v2)
 for i in {1..10}; do
   curl -s -H "Host: sms-istio.local" http://$INGRESS_IP/ | grep -o 'version=[^"]*' || echo "response received"
 done
-
-# Test header-based routing (force canary)
-curl -H "Host: sms-istio.local" -H "x-version: canary" http://$INGRESS_IP/
 
 # Test sticky session
 curl -c cookies.txt -H "Host: sms-istio.local" http://$INGRESS_IP/
@@ -306,91 +517,25 @@ curl -b cookies.txt -H "Host: sms-istio.local" http://$INGRESS_IP/  # Same versi
 kubectl get vs -n sms-app -o yaml | grep -A 30 "http:"
 ```
 
-### Test Grafana
+### Test Canary Metrics Comparison
 
-1. Open http://grafana.local
-2. Login: admin / admin (skip password change)
-3. Go to Dashboards → SMS App
-4. Verify metrics are showing
-
-## Notes
-
-### Images
-
-Override image tags for pinned releases:
-```bash
-helm upgrade --install sms-app helm/chart -n sms-app \
-  --set app.image.tag=v1.0.0 \
-  --set modelService.image.tag=v1.0.0
-```
-
-### Ingress
-
-To change hostname:
-```bash
-helm upgrade --install sms-app helm/chart -n sms-app \
-  --set 'ingress.hosts[0].host=myapp.example.com'
-```
-
-### HostPath Volume
+To verify canary (v2) vs stable (v1) metrics are being recorded separately:
 
 ```bash
-# Disable volume
-helm upgrade --install sms-app helm/chart -n sms-app \
-  --set modelService.volume.enabled=false
+# Generate traffic through Istio (this distributes to both v1 and v2)
+INGRESS_IP=$(kubectl -n istio-system get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
-# Change path
-helm upgrade --install sms-app helm/chart -n sms-app \
-  --set modelService.volume.hostPath=/custom/path
+for i in {1..30}; do
+  curl -s -X POST -H "Host: sms-app.local" http://$INGRESS_IP/sms \
+    -H "Content-Type: application/json" \
+    -d '{"sms": "Test message"}' > /dev/null &
+done
+wait
 ```
 
-### Image Pull Secrets
-
-```bash
-kubectl create secret docker-registry ghcr-cred -n sms-app \
-  --docker-server=ghcr.io \
-  --docker-username=YOUR_GITHUB_USER \
-  --docker-password=YOUR_PAT
-
-helm upgrade --install sms-app helm/chart -n sms-app \
-  --set "imagePullSecrets[0].name=ghcr-cred"
+Then in Prometheus (http://localhost:9090), query:
+```promql
+sum by (version, dashboard_version) (sms_messages_classified_total{namespace="sms-app"})
 ```
 
-## Troubleshooting
-
-### KVM kernel extension error
-Run
-```bash
-sudo modprobe -r kvm_amd kvm
-```
-or (if the first one doesn't work)
-```bash
-echo -e "blacklist kvm\nblacklist kvm_amd" | sudo tee /etc/modprobe.d/blacklist-kvm.conf
-```
-
-### Helm upgrade hangs
-```bash
-kubectl delete jobs -n sms-app -l app.kubernetes.io/component=admission-webhook
-helm rollback sms-app <last-working-revision> -n sms-app
-```
-
-### Pods not starting
-```bash
-kubectl get pods -n sms-app
-kubectl describe pod <pod-name> -n sms-app
-kubectl logs <pod-name> -n sms-app
-```
-
-### Namespace ownership error
-```bash
-kubectl delete namespace sms-app
-# Wait for deletion, then redeploy
-```
-
-### Grafana crashing
-Check logs:
-```bash
-kubectl logs -n sms-app -l app.kubernetes.io/name=grafana -c grafana
-```
-
-Common fix — duplicate datasource error: remove custom datasources from values.yaml (kube-prometheus-stack handles it).
+You should see separate counts for `v1` and `v2`.
