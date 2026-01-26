@@ -26,19 +26,19 @@ grafana:
 
 app:
   replicaCount: 2
-  versionLabel: v1  # Version label for stable deployment
-  
+  versionLabel: v1 # Version label for stable deployment
+
   # Canary deployment settings
   canary:
-    enabled: true  # Set to true for canary deployment
+    enabled: true # Set to true for canary deployment
     replicaCount: 1
-    versionLabel: v2  # Version label for canary deployment
+    versionLabel: v2 # Version label for canary deployment
     image:
       repository: "" # Defaults to app.image.repository if empty
       tag: "latest"
       pullPolicy: Always
     podAnnotations: {}
-  
+
   image:
     repository: ghcr.io/doda2025-team17/app
     tag: "latest"
@@ -65,18 +65,18 @@ app:
 # Model Service Configuration
 modelService:
   replicaCount: 1
-  versionLabel: v1  # Version label for stable deployment
-  
+  versionLabel: v1 # Version label for stable deployment
+
   # Canary deployment settings
   canary:
-    enabled: true  # Set to true for canary deployment
+    enabled: true # Set to true for canary deployment
     replicaCount: 1
-    versionLabel: v2  # Version label for canary deployment
+    versionLabel: v2 # Version label for canary deployment
     image:
       repository: ""
       tag: "latest"
       pullPolicy: Always
-  
+
   image:
     repository: ghcr.io/doda2025-team17/model-service
     tag: "latest"
@@ -130,7 +130,7 @@ ingress:
 
 # Istio Traffic Management
 istio:
-  enabled: true  # Set to true to enable Istio routing
+  enabled: true # Set to true to enable Istio routing
   hosts:
     - sms-app.local
     - stable.sms-app.local
@@ -139,7 +139,7 @@ istio:
     experiment: sms-app.local
     stable: stable.sms-app.local
     canary: canary.sms-app.local
-  
+
   gateway:
     name: sms-app-gateway
     port: 80
@@ -148,7 +148,7 @@ istio:
     selector:
       istio: ingressgateway
     tls: {}
-  
+
   canary:
     stableSubset: v1
     canarySubset: v2
@@ -161,7 +161,7 @@ istio:
       name: sms-app-version
       ttl: 3600s
   modelRouting:
-    subsetLabelKey: version    
+    subsetLabelKey: version
 
 # Monitoring / Prometheus setup
 monitoring:
@@ -173,7 +173,7 @@ monitoring:
   ports:
     name: metrics
   paths:
-    app: /actuator/prometheus
+    app: /metrics
     model: /metrics
   scrapeInterval: 15s
 
@@ -210,10 +210,10 @@ kube-prometheus-stack:
       global:
         resolve_timeout: 5m
       route:
-        receiver: 'null'
-        group_by: ['alertname']
+        receiver: "null"
+        group_by: ["alertname"]
       receivers:
-        - name: 'null'
+        - name: "null"
       # NO SMTP CREDENTIALS HERE - handled by AlertmanagerConfig CRD
 
   prometheus:
@@ -230,12 +230,12 @@ kube-prometheus-stack:
   # Enable Grafana
   grafana:
     enabled: false
-    
+
     image:
       repository: grafana/grafana
       tag: "9.5.0"
-    adminPassword: admin  # Change in production or use secret
-    
+    adminPassword: admin # Change in production or use secret
+
     # Auto-provision dashboards from ConfigMaps with label grafana_dashboard=sms-app
     sidecar:
       dashboards:
@@ -246,7 +246,7 @@ kube-prometheus-stack:
         folderAnnotation: grafana_folder
         provider:
           foldersFromFilesStructure: true
-    
+
     # Ingress for Grafana
     ingress:
       enabled: true
