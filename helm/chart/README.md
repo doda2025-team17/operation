@@ -117,7 +117,7 @@ helm upgrade --install sms-app helm/chart -n sms-app \
 kubectl label ns sms-app istio-injection=enabled --overwrite
 ```
 
-### Full Stack (Everything)
+### Full Stack (Everything Besides Shadow)
 
 ```bash
 kubectl create namespace sms-app --dry-run=client -o yaml | kubectl apply -f -
@@ -295,6 +295,7 @@ helm template sms-app helm/chart \
 4. Click **Upload JSON file** and select the extracted JSON file
 5. Select **Prometheus** as the datasource when prompted
 6. Click **Import**
+7. Search for your Dashboard.
 
 ### Available Dashboards
 

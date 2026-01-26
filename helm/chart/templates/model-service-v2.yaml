@@ -1,3 +1,4 @@
+{{- if and .Values.modelService.canary.enabled (not .Values.modelService.shadow.enabled) }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -10,8 +11,9 @@ spec:
   selector:
     app.kubernetes.io/name: {{ include "sms-app.model.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
-    version: "v2"
+    version: {{ .Values.modelService.canary.versionLabel | default "v2" | quote }}
   ports:
     - name: http
       port: {{ .Values.modelService.service.port }}
       targetPort: {{ .Values.modelService.containerPort }}
+{{- end }}
