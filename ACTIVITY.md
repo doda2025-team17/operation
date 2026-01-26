@@ -256,6 +256,6 @@ No work.
 
 ### Ana
 
-- Updated deployment document with new alert monitoring flow
+- Updated deployment document with new alert monitoring flow [#87](https://github.com/doda2025-team17/operation/pull/87)
 
 ### Nicholas
