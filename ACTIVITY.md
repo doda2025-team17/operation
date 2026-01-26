@@ -201,11 +201,13 @@ No work.
 - Wrote the second part of the Extension Proposal in PR [#66](https://github.com/doda2025-team17/operation/pull/66)
 
 ### Arnav
+
 - Reviewed shadow launch PR [64](https://github.com/doda2025-team17/operation/pull/64)
 - Updated canary version of app and model-service for CE [69](https://github.com/doda2025-team17/operation/pull/69)
 - Finished the first part of the CE documentation [70](https://github.com/doda2025-team17/operation/pull/70)
 
 ### Kristian
+
 - Improved the Shadow Launch: PR [#64](https://github.com/doda2025-team17/operation/pull/64).
 - Reviewed PR [#21](https://github.com/doda2025-team17/app/pull/21) and PR [#22](https://github.com/doda2025-team17/app/pull/22).
 
@@ -225,16 +227,18 @@ No work.
 - I reviewed the entire project and checked it against every rubric in every assignment, identifying weak areas and making an actionable plan for improvement
 - I created my own slides and images for the presentation
 
-
 ### Arnav
 
 ### Kristian
+
 - Separated traffic of app and shadow per version: PR [#80](https://github.com/doda2025-team17/operation/pull/80).
 - Added source label to model metrics for shadow traffic: PR [#16](https://github.com/doda2025-team17/model-service/pull/16).
 
 ### Ana
 
 - Improved graphs inside deployment documentation [#73](https://github.com/doda2025-team17/operation/pull/73)
+- Fixed alert monitoring [#24](https://github.com/doda2025-team17/app/pull/24)
+- Contributed to this PR [#81](https://github.com/doda2025-team17/operation/pull/81) in order to finish alert monitoring and fix some small bugs
 
 ### Nicholas
 
@@ -251,5 +255,7 @@ No work.
 ### Kristian
 
 ### Ana
+
+- Updated deployment document with new alert monitoring flow
 
 ### Nicholas

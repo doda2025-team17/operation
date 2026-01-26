@@ -330,7 +330,7 @@ To make the deployment easier to reason about (and to support experimentation), 
 
 | Resource               | Purpose                             |
 | ---------------------- | ----------------------------------- |
-| ServiceMonitor (app)   | Scrapes `/actuator/prometheus`      |
+| ServiceMonitor (app)   | Scrapes `/metrics`                  |
 | ServiceMonitor (model) | Scrapes `/metrics`                  |
 | PrometheusRule         | Alerts on high request throughput   |
 | Grafana dashboards     | App-level and experiment dashboards |
@@ -568,7 +568,7 @@ title: Figure 4 - Monitoring and Alerting Pipeline
 ---
 flowchart LR
     subgraph sms-app["sms-app namespace"]
-        App["App Service<br/>/actuator/prometheus"]
+        App["App Service<br/>/metrics"]
         Model["Model Service<br/>/metrics"]
     end
 
@@ -616,64 +616,82 @@ flowchart LR
     style visualization fill:#edba8a,stroke:#facc15
 ```
 
-Both app and model expose Prometheus metrics:
+Both app and model services expose Prometheus metrics via custom `/metrics` endpoints that are manually implemented.
 
-### App
+### App Service Metrics
 
-- `/actuator/prometheus`
+- **Endpoint:** `/metrics`
+- **Implementation:** Custom `MetricsController` + `MetricsRecorder` classes that manually format Prometheus exposition text
+- **Metrics exposed:**
 
-- Metrics include:
-  - request counter
+| Metric                          | Type      | Labels                                  | Description                                                            |
+| ------------------------------- | --------- | --------------------------------------- | ---------------------------------------------------------------------- |
+| `sms_messages_classified_total` | Counter   | `result`, `source`, `dashboard_version` | Total SMS messages classified (spam/ham)                               |
+| `sms_active_requests`           | Gauge     | `endpoint`, `dashboard_version`         | Current number of in-flight classification requests                    |
+| `sms_request_latency_seconds`   | Histogram | `endpoint`, `dashboard_version`         | Latency distribution for classification requests (buckets: 5ms to 10s) |
+| `sms_cache_hits_total`          | Counter   | `dashboard_version`                     | Number of cache hits                                                   |
+| `sms_cache_misses_total`        | Counter   | `dashboard_version`                     | Number of cache misses                                                 |
+| `sms_model_calls_total`         | Counter   | `dashboard_version`                     | Number of calls to the model service                                   |
 
-  - active requests gauge
+> **Note:** These metrics are only recorded when requests are made to `POST /sms` (the classification endpoint). Requests to `/` (root) do not generate metrics.
 
-  - response time histogram
+### Model Service Metrics
 
-  - classification counters (version-labelled)
+- **Endpoint:** `/metrics`
+- **Implementation:** Custom Python endpoint that manually formats Prometheus exposition text
+- **Metrics exposed:**
 
-### Model
-
-- `/metrics`
-
-- Includes:
-  - inference latency histogram
-
-  - request counters
-
-  - version-labelled metrics for comparison
+| Metric                        | Type      | Labels              | Description                                    |
+| ----------------------------- | --------- | ------------------- | ---------------------------------------------- |
+| `sms_model_predictions_total` | Counter   | `version`, `source` | Total predictions made                         |
+| `sms_model_inference_seconds` | Histogram | `version`           | Model inference latency distribution           |
+| `sms_model_inflight_requests` | Gauge     | `version`           | Current number of in-flight inference requests |
 
 ### ServiceMonitors
 
-Prometheus detects endpoints automatically:
+Prometheus automatically discovers and scrapes metrics endpoints via ServiceMonitor CRDs:
 
-```bash
-ServiceMonitor (app) → Service (app)
-ServiceMonitor (model) → Service (model)
 ```
+ServiceMonitor (sms-app-app)   → Service (sms-app-app)   → GET /metrics every 15s
+ServiceMonitor (sms-app-model) → Service (sms-app-model) → GET /metrics every 15s
+```
+
+The ServiceMonitors are configured with label selectors to match the appropriate services and add version labels to scraped metrics.
 
 ### Alerting
 
-- AlertManager receives alerts from Prometheus
-- PrometheusRule CRD defines alert conditions (e.g., HighRequestRate > 15 req/min)
-- AlertmanagerConfig CRD routes alerts to email notifications
+The alerting pipeline consists of:
 
-### Grafana Dashboards Imported Automatically
+1. **PrometheusRule:** Defines alert conditions
+   - `HighRequestRate`: Fires when `sum(rate(sms_messages_classified_total[1m])) * 60 > 15` for 2 minutes
 
-Two dashboards are deployed:
+2. **Alertmanager:** Receives alerts from Prometheus and routes them
 
-1. **Operational Metrics Dashboard**
+3. **AlertmanagerConfig:** Configures email notifications via SMTP
+   - SMTP credentials are stored in a pre-deployed Kubernetes Secret (`smtp-credentials`)
+   - No passwords are stored in deployment files or source code
 
-2. **Experiment Comparison Dashboard**
-   - Shows v1 vs v2:
-     - throughput
+### Grafana Dashboards
 
-     - error %
+Two dashboards are automatically provisioned via ConfigMaps with `grafana_dashboard: sms-app` labels:
 
-     - inference latency
+1. **SMS App Metrics Dashboard** (`sms-app-metrics`)
+   - Classification rate gauge (req/min)
+   - Total classifications counter
+   - Average response time gauge
+   - Active requests gauge
+   - Classification rate over time (by result: spam/ham)
+   - Response time percentiles (p50, p90, p99)
+   - Classifications by result (pie chart)
+   - Model service calls rate
 
-     - p95 response time
-
-These dashboards are loaded via ConfigMaps with `grafana_dashboard` labels.
+2. **SMS App Experiment Dashboard** (`sms-app-experiment`)
+   - Request rate comparison (v1 vs v2)
+   - Inflight requests by version
+   - Response time p95 comparison (stable vs canary)
+   - Model inference latency comparison
+   - Average inference time by version
+   - Predictions created per minute by version
 
 ---
 
