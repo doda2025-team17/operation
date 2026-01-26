@@ -1,4 +1,4 @@
-{{- if .Values.app.canary.enabled }}
+{{- if and .Values.istio.enabled .Values.modelService.canary.enabled (not .Values.modelService.shadow.enabled) }}
 {{- $namespace := .Values.namespace.name | default .Release.Namespace }}
 {{- $repo := .Values.app.canary.image.repository | default .Values.app.image.repository }}
 {{- $tag := .Values.app.canary.image.tag | default .Values.app.image.tag }}
@@ -55,10 +55,10 @@ spec:
             - name: SMTP_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "sms-app.fullname" . }}-secrets
+                  name: {{ .Values.secrets.existingSecretName | default (printf "%s-secrets" (include "sms-app.fullname" .)) }}
                   key: SMTP_PASSWORD
             - name: DASHBOARD_VERSION
-              value: {{ .Values.config.dashboardVersionCanary | default "v2" | quote }}  # "v2"
+              value: {{ .Values.config.dashboardVersionCanary | default "v2" | quote }}
           readinessProbe:
             httpGet:
               path: {{ .Values.app.readinessProbe.path }}

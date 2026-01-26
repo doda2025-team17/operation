@@ -1,5 +1,4 @@
-{{- if and .Values.istio.enabled .Values.modelService.shadow.enabled }}
-{{- $mirrorPercent := default 0 .Values.modelService.shadow.mirror.percent -}}
+{{- if .Values.istio.enabled }}
 {{- $namespace := default .Release.Namespace .Values.namespace.name -}}
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
@@ -16,34 +15,42 @@ spec:
   gateways:
     - mesh
   http:
-    - name: model-stable
-      match:
-        - sourceLabels:
-            {{ .Values.istio.modelRouting.subsetLabelKey }}: {{ .Values.app.versionLabel | quote }}
+    {{- if .Values.modelService.shadow.enabled }}
+    - name: model-stable-with-shadow
       route:
         - destination:
             host: {{ include "sms-app.model.name" . }}
-            subset: {{ .Values.modelService.versionLabel }}
-      {{- if and .Values.modelService.shadow.mirror.enabled (gt (float64 $mirrorPercent) 0.0) }}
+            subset: {{ .Values.modelService.versionLabel | quote }}
+      {{- if and .Values.modelService.shadow.mirror.enabled (gt (float64 (default 0 .Values.modelService.shadow.mirror.percent)) 0.0) }}
       mirror:
         host: {{ include "sms-app.model.name" . }}
-        subset: {{ .Values.modelService.shadow.versionLabel }}
+        subset: {{ .Values.modelService.shadow.versionLabel | quote }}
       mirrorPercentage:
-        value: {{ $mirrorPercent }}
+        value: {{ default 0 .Values.modelService.shadow.mirror.percent }}
       {{- end }}
-    {{- if .Values.app.canary.enabled }}
-    - name: model-canary
+
+    {{- else if .Values.modelService.canary.enabled }}
+    # Paired routing (CE requirement)
+    - name: model-for-app-canary
       match:
         - sourceLabels:
             {{ .Values.istio.modelRouting.subsetLabelKey }}: {{ .Values.app.canary.versionLabel | quote }}
       route:
         - destination:
             host: {{ include "sms-app.model.name" . }}
-            subset: {{ .Values.modelService.shadow.versionLabel }}
-    {{- end }}
+            subset: {{ .Values.modelService.canary.versionLabel | quote }}
+
+    - name: model-default-stable
+      route:
+        - destination:
+            host: {{ include "sms-app.model.name" . }}
+            subset: {{ .Values.modelService.versionLabel | quote }}
+
+    {{- else }}
     - name: model-default
       route:
         - destination:
             host: {{ include "sms-app.model.name" . }}
-            subset: {{ .Values.modelService.versionLabel }}
+            subset: {{ .Values.modelService.versionLabel | quote }}
+    {{- end }}
 {{- end }}

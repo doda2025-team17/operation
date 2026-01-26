@@ -15,7 +15,33 @@ spec:
   gateways:
     - {{ .Values.istio.gateway.name }}
   http:
-    - name: app-canary
+    # 1) Force STABLE
+    - name: app-stable-host
+      match:
+        - authority:
+            exact: {{ .Values.istio.hostRouting.stable | quote }}
+      route:
+        - destination:
+            host: {{ include "sms-app.app.name" . }}
+            subset: {{ .Values.istio.canary.stableSubset }}
+          weight: 100
+
+    # 2) Force CANARY
+    - name: app-canary-host
+      match:
+        - authority:
+            exact: {{ .Values.istio.hostRouting.canary | quote }}
+      route:
+        - destination:
+            host: {{ include "sms-app.app.name" . }}
+            subset: {{ .Values.istio.canary.canarySubset }}
+          weight: 100
+
+    # 3) Default EXPERIMENT traffic (weighted)
+    - name: app-experiment-weighted
+      match:
+        - authority:
+            exact: {{ .Values.istio.hostRouting.experiment | quote }}
       route:
         - destination:
             host: {{ include "sms-app.app.name" . }}

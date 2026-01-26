@@ -38,10 +38,10 @@ spec:
             - name: SMTP_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "sms-app.fullname" . }}-secrets
+                  name: {{ .Values.secrets.existingSecretName | default (printf "%s-secrets" (include "sms-app.fullname" .)) }}
                   key: SMTP_PASSWORD
             - name: DASHBOARD_VERSION
-              value: {{ .Values.app.versionLabel | quote }}   # "v1"
+              value: {{ .Values.config.dashboardVersion | default "v1" | quote }}
           readinessProbe:
             httpGet:
               path: {{ .Values.app.readinessProbe.path }}
