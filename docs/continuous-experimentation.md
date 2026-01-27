@@ -45,7 +45,7 @@ New Prometheus counters and gauges were introduced:
 | `sms_request_latency_seconds` | End-to-end request latency |
 | `sms_active_requests` | Concurrent in-flight requests |
 
-All metrics include a `dashboard_version` label (`v1` or `v2`) to enable side-by-side comparison.
+All metrics include a version label (`v1` or `v2`) to enable side-by-side comparison.
 
 #### 3. Version Visibility
 
@@ -71,7 +71,7 @@ App-service v2 reduces model-service calls for repeated requests but may introdu
 - Canary routing is enabled in Istio with a weighted split:
   - 90% → v1
   - 10% → v2
-- Version labels (`version=v1`, `version=v2`) are used by DestinationRules.
+- Version labels (version=v1, version=v2) are used by DestinationRules.
 - Version-specific configuration (image tags, labels, routing rules, hostnames) is fully controlled via Helm values.
 - Routing guarantees consistent version pairing between app and model.
 
@@ -123,7 +123,7 @@ The following metrics are used:
 
 ---
 
-### Decision Criteria and Decision Process
+## Decision Criteria and Decision Process
 
 The canary version (v2) is accepted if all of the following conditions are satisfied:
 
