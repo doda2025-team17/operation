@@ -238,7 +238,7 @@ This deploys the app to the Kubernetes cluster with default configurations, crea
 - `Services` for internal communication
 - `Ingress` for external access (host: `sms-app.local`)
 - Optional Istio resources (Gateway/VirtualService/DestinationRule) and a hostPath volume for `/mnt/shared/models`
-- Optional monitoring/alerting stack (kube-prometheus-stack) with ServiceMonitors for the app (`/actuator/prometheus`) and model (`/metrics`), plus a PrometheusRule (>15 req/min for 2 minutes) routed through Alertmanager via SMTP secret
+- Optional monitoring/alerting stack (kube-prometheus-stack) with ServiceMonitors for the app and model through the `/metrics` endpoint, plus a PrometheusRule (>15 req/min for 2 minutes) routed through Alertmanager via SMTP secret
 - Two Grafana dashboards auto-imported via ConfigMaps: Operational (throughput/latency/error) and Experiment (version split, p95 latency, cache hit/miss, model call rate, mirror traffic)
 
 
@@ -373,14 +373,14 @@ helm upgrade sms-app helm/chart -n sms-app \
 
 ## 9. Observability quick access
 ```bash
-# Grafana (if LB/DNS not reachable)
+# Grafana
 kubectl port-forward -n sms-app svc/sms-app-kube-prometheus-st-grafana 3000:80
 # Prometheus
 kubectl port-forward -n sms-app svc/sms-app-kube-prometheus-st-prometheus 9090:9090
 # Alertmanager
 kubectl port-forward -n sms-app svc/sms-app-kube-prometheus-st-alertmanager 9093:9093
 ```
-Grafana dashboards are auto-imported; login default (if unchanged by values) is `admin/prom-operator`.
+Grafana dashboards are auto-imported; login default (if unchanged by values) is `admin/admin`.
 
 ## 10. Tear down
 ```bash
