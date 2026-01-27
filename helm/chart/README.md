@@ -254,7 +254,7 @@ kubectl -n sms-app port-forward deploy/sms-app-app-canary 8082:8080
 
 Terminal 3 – Grafana
 ```bash
-Terminal 3 – Grafana
+kubectl -n sms-app port-forward svc/sms-app-grafana 3000:80
 ```
 
 #### Step 6 – Generate Traffic
