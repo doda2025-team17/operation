@@ -11,7 +11,7 @@ spec:
   selector:
     app.kubernetes.io/name: {{ include "sms-app.model.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
-    version: {{ .Values.modelService.canary.versionLabel | default "v2" | quote }}
+    version: "v2"
   ports:
     - name: http
       port: {{ .Values.modelService.service.port }}
