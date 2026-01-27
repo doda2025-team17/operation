@@ -297,16 +297,16 @@ This confirms:
 - Metrics are labeled correctly by version
 - Canary behavior is observable
 
-## Uninstall
-
-```bash
-helm uninstall sms-app --namespace sms-app
-```
-
 #### Notes
 If you get a connection error in a new terminal, run this in that terminal:
 ```bash
 export KUBECONFIG=$PWD/vm/kubeconfig
+```
+
+## Uninstall
+
+```bash
+helm uninstall sms-app --namespace sms-app
 ```
 
 ## Delete Secret
