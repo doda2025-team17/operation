@@ -127,9 +127,12 @@ The following metrics are used:
 
 The canary version (v2) is accepted if all of the following conditions are satisfied:
 
-### Concurrency Behavior
-- `sms_active_requests`
-- Used to detect request buildup, blocking behavior, or spikes.
+1. **Cache utilization**: v2 shows a consistently non-zero cache hit rate while v1 remains at zero.
+2. **Reduced model load**: v2 generates fewer model-service calls per minute than v1 for similar traffic patterns.
+3. **Latency improvement or no regression**:  The p95 latency of v2 is equal to or lower than v1 during steady traffic.
+4. **Operational stability**:  No increase in active requests, error rates, or abnormal behavior is observed for v2.
+
+These criteria ensure that the cache improves performance without introducing regressions or instability.
 
 ---
 
@@ -176,31 +179,17 @@ This behavior suggests minor transient concurrency effects but no long-term oper
 
 ---
 
-## Interpretation
+## Interpretation and Decision
 
-The experiment shows clear performance benefits for the cached version (v2):
+Based on the observed metrics, all decision criteria are satisfied when evaluated together:
 
-| Aspect | Outcome |
-|--------|---------|
-| Cache correctness | Cache hits increase after warm-up |
-| Model load reduction | Fewer model-service calls in v2 |
-| Latency | Lower p95 latency compared to v1 |
-| Concurrency behavior | ⚠Brief transient spike |
-| System stability | No errors or sustained overload |
+- The cache in v2 achieves measurable cache hits. 
+- Model-service load is reduced for v2. 
+- No latency regressions are observed. 
+- System stability remains unaffected.
 
-The cache successfully reduces backend load while improving end-to-end latency.  
-The short spike in active requests does not appear to affect system stability.
----
-
-## Decision
-
-The alternative hypothesis (H₁) is accepted:
-
-- v2 reduces model-service calls through effective caching.
-- v2 consistently shows lower p95 latency than v1.
-- No instability or error behavior was observed.
-
-The cache delivers measurable performance improvements and can be promoted to stable with low operational risk.
+Therefore, the null hypothesis (H₀) is rejected and the alternative hypothesis (H₁) is accepted.
+The cached canary version (v2) demonstrates clear performance benefits and can be safely promoted to stable.
 
 ---
 
