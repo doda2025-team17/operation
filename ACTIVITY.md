@@ -150,7 +150,9 @@ No work.
 
 ### Arnav
 
-- Added and enabled variables to work on the Continuous Experimentation part of the assignment and update pom versions in app and model-service
+- Added and enabled variables to work on the Continuous Experimentation part of the assignment (PR [#56](https://github.com/doda2025-team17/operation/pull/56))
+- Update pom versions in app to make new releases (PR [#20](https://github.com/doda2025-team17/app/pull/20))
+- Updated model-service to create new releases and added a header (PR [#12](https://github.com/doda2025-team17/model-service/pull/12/changes))
 - Reviewed multiple PRs
 
 ### Kristian
@@ -177,8 +179,8 @@ No work.
 
 ### Arnav
 
-- Worked on making two versions for both App and Model-service
-- Made a cache feature for App for CE as part of the additional feature requirement
+- Worked on making two versions for App and added a cache feature for v2 with new metrics (PR [#21](https://github.com/doda2025-team17/app/pull/21))
+- Incremented version number for v2 for Model-service (PR [#14](https://github.com/doda2025-team17/model-service/pull/14))
 
 ### Kristian
 
@@ -228,6 +230,9 @@ No work.
 - I created my own slides and images for the presentation
 
 ### Arnav
+- I worked on fixing the v1 -> v2 routing for app and model and created multiple yaml files for versioning and editing other yaml files (PR [81](https://github.com/doda2025-team17/operation/pull/81))
+- Included adding metric configs to the grafana experiment configmap so that grafana could visualize the metrics prometheus was scraping
+- Finished most of the continuous experiment document (PR [#84](https://github.com/doda2025-team17/operation/pull/84))
 
 ### Kristian
 
@@ -256,6 +261,11 @@ No work.
 - Compared our existing code with all the assignment rubrics once more.
 
 ### Arnav
+- Released v1 for app since there were some changes to app (PR [25](https://github.com/doda2025-team17/app/pull/25))
+- Released v2 for app with updated cache feature that use updated functions to measure metrics (PR [26](https://github.com/doda2025-team17/app/pull/26))
+- Updated helm readme for continuous experiment so users can test it properly (PR [#92](https://github.com/doda2025-team17/operation/pull/92))
+- Fixed some metric errors that were not getting scrapped due to wrong version naming with app (PR [#93](https://github.com/doda2025-team17/operation/pull/93))
+- Final iteration of the continuous experiment document (PR [#94](https://github.com/doda2025-team17/operation/pull/94))
 
 ### Kristian
 - Completed my slides of the presentation
