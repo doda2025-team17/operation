@@ -210,8 +210,6 @@ kubectl -n sms-app create secret generic smtp-credentials \
 
 #### Step 3 – Deploy Helm (Canary + Monitoring + Istio)
 ```bash
-kubectl label ns sms-app istio-injection=disabled --overwrite
-
 helm upgrade --install sms-app helm/chart -n sms-app --create-namespace \
   --set istio.enabled=true \
   --set monitoring.enabled=true \
@@ -230,8 +228,6 @@ helm upgrade --install sms-app helm/chart -n sms-app --create-namespace \
   --set istio.canary.weights.stable=90 \
   --set istio.canary.weights.canary=10 \
   --wait --timeout 15m
-
-kubectl label ns sms-app istio-injection=enabled --overwrite
 ```
 
 #### Step 4 – Verify Pods Are Running
