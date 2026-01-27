@@ -223,7 +223,7 @@ No work.
 
 - I finished the Extension in PR [#78](https://github.com/doda2025-team17/operation/pull/78), creating my own visualizations for it
 - I helped improve the code and reach assignment requirements in PR [#83](https://github.com/doda2025-team17/operation/pull/83)
-- I also contributed to PR [#81](https://github.com/doda2025-team17/operation/pull/81)
+- I also contributed to PR [#81](https://github.com/doda2025-team17/operation/pull/81) and PR [#84](https://github.com/doda2025-team17/operation/pull/84)
 - I reviewed the entire project and checked it against every rubric in every assignment, identifying weak areas and making an actionable plan for improvement
 - I created my own slides and images for the presentation
 
@@ -249,6 +249,11 @@ No work.
 ## Week Q4.10 (Jan. 26 - 30)
 
 ### Rebecca
+
+- Contributed to PR [#87](https://github.com/doda2025-team17/operation/pull/87)
+- Added details and diagrams to the deployment.md file in PR [#88](https://github.com/doda2025-team17/operation/pull/88)
+- Tested the entire project from top to bottom to check everything in the README files works.
+- Compared our existing code with all the assignment rubrics once more.
 
 ### Arnav
 
