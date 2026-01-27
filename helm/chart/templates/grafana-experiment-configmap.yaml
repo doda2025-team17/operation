@@ -119,7 +119,7 @@ data:
           "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
           "targets": [
             {
-              "expr": "sum by (dashboard_version) (sms_active_requests{namespace=\"{{ .Values.namespace.name }}\"})",
+              "expr": "max by (dashboard_version) (max_over_time(sms_active_requests{namespace=\"{{ .Values.namespace.name }}\"}[1m]))",
               "legendFormat": "{{`{{dashboard_version}}`}}",
               "refId": "A"
             }
