@@ -418,6 +418,8 @@ Istio does not control this traffic. It is purely a standard HTTP ingress path t
 
 Requests sent to Istio-managed hosts pass through the Gateway and VirtualService, as depicted in Figure 3.
 
+> Note: v2 is only configured when canary is enabled. Otherwise, only v1 exists.
+
 ```mermaid
 ---
 title: Figure 3 - Istio Traffic Management and Host-Based Routing
@@ -623,16 +625,10 @@ Shadow mode is an **alternative** to canary mode (they are mutually exclusive). 
 
 ### How It Works
 
-```
-App (v1 only)
-   |
-   | POST /predict
-   |
-   v
-Model v1 (serves user)
-   \
-    \----> Istio Mirror ----> Model Shadow
-```
+<figure>
+  <img src="images/deployment/Shadow Launch.png" alt="Shadow Launch Workflow">
+  <figcaption>Figure: Shadow Launch Workflow.</figcaption>
+</figure>
 
 ### Istio Mirror Configuration
 
@@ -653,6 +649,8 @@ http:
 ```
 
 ### Shadow vs Canary Mode
+
+> Note: Canary and Shadow cannot be applied at the same time.
 
 | Aspect                | Canary Mode                        | Shadow Mode                      |
 | --------------------- | ---------------------------------- | -------------------------------- |
