@@ -1,4 +1,6 @@
 # Table of Contents
+* [Operation](#operation)
+* [Final Presentation Slides](#final-presentation-slides)
 * [Architecture Overview](#architecture-overview)
 * [Quick Start](#quick-start)
 
@@ -14,7 +16,6 @@
    * [Assignment 2 - Kubernetes Infrastructure](#assignment-2---kubernetes-infrastructure)
    * [Assignment 3](#assignment-3)
    * [Assignment 4 - Traffic Management & Continuous Experimentation](#assignment-4---traffic-management--continuous-experimentation)
-   * [Final Presentation Slides](#final-presentation-slides)
 * [Deployment & Docs](#deployment--docs)
 * [Run Everything](#run-everything)
 
@@ -30,24 +31,29 @@ View our project presentation slides: [Google Slides Presentation](https://docs.
 
 This system has four repositories, found at these links:
 
-| Repository | Latest Release | Description |
+| Repository | Link | Description |
 |------------|----------------|-------------|
-| [**app**](https://github.com/doda2025-team17/app/) | [v1.0.1](https://github.com/doda2025-team17/app/releases/tag/v1.0.1) | Spring Boot web application serving as the frontend and API gateway |
-| [**model-service**](https://github.com/doda2025-team17/model-service/) | [v1.0.1](https://github.com/doda2025-team17/model-service/releases/tag/v1.0.1) | Python-based machine learning service for spam detection |
-| [**lib-version**](https://github.com/doda2025-team17/lib-version/) | [v1.0.2](https://github.com/doda2025-team17/lib-version/releases/tag/v1.0.2) | Version utility library used by the app service |
-| [**operation**](https://github.com/doda2025-team17/operation/) | [v3.0.0](https://github.com/doda2025-team17/operation/releases/tag/v3.0.0) | Main deployment and orchestration repository with documentation |
+| **app** | https://github.com/doda2025-team17/app/ | Spring Boot web application serving as the frontend and API gateway |
+| **model-service** | https://github.com/doda2025-team17/model-service/ | Python-based machine learning service for spam detection |
+| **lib-version** | https://github.com/doda2025-team17/lib-version/ | Version utility library used by the app service |
+| **operation** | https://github.com/doda2025-team17/operation/ | Main deployment and orchestration repository with documentation |
 
 # Quick Start
 
 ## Prerequisites
 
+### Local Run
 * [Docker and Docker Compose](https://docs.docker.com/compose/install/)
+
+### Provisioned Cluster (A2-A4)
 * [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
 * [Vagrant](https://developer.hashicorp.com/vagrant/install)
 * [VirtualBox](https://www.virtualbox.org/wiki/Downloads)
-* [Minikube](https://minikube.sigs.k8s.io/docs/start/)
-* kubectl (1.34+)
+* kubectl (1.32+)
 * [Helm](https://helm.sh/docs/intro/install/)
+
+### Optional
+* [Minikube](https://minikube.sigs.k8s.io/docs/start/)
 
 ## Running the Application
 
@@ -111,7 +117,7 @@ For Assignment 1, we have extended the application of the SMS spam detection sys
 More information on the containerized services can be found at the [app repository](https://github.com/doda2025-team17/app) and [model-service repository](https://github.com/doda2025-team17/model-service), and details about the version-aware Maven library can be found at the [lib-version repository](https://github.com/doda2025-team17/lib-version).
 
 ### Important information
-- **lib-version**: `VersionUtil` reads the packaged version (not git). The Spring app depends on it to surface build info. Release workflow: SNAPSHOT -> tag -> publish to GHCR Maven -> bump to next SNAPSHOT; branch builds publish timestamped pre-releases with branch suffixes.
+- **lib-version**: `VersionUtil` reads the packaged version (not git). The Spring app depends on it to surface build info. Release workflow: SNAPSHOT -> tag -> publish to GitHub Packages (Maven) -> bump to next SNAPSHOT; branch builds publish timestamped pre-releases with branch suffixes.
 - **Containers**: Multi-stage Dockerfiles for both app and model produce slim images; buildx builds amd64+arm64 manifests pushed to GHCR. Env vars (`MODEL_HOST`, `APP_PORT`, `MODEL_PORT`) keep endpoints/ports configurable.
 - **Docker Compose**: `operation/docker-compose.yml` wires app <-> model; `.env` controls host ports. Run locally with `docker-compose up -d` / `docker-compose down`.
 - **Model delivery**: Model weights are not baked into the image. The model container mounts a volume and, if empty, downloads the released model asset on startup (from the manual “train and release model” GitHub workflow).
@@ -225,10 +231,9 @@ export KUBECONFIG=vm/kubeconfig
 #### 3.a. Using the Helm Chart
 
 ```bash
-helm install sms-app ./helm/chart \
-  --namespace sms-app \
-  --create-namespace
+helm upgrade --install sms-app helm/chart -n sms-app --create-namespace
 ```
+
 This deploys the app to the Kubernetes cluster with default configurations, creating:
 - A sms-app namespace
 - Two replicas of the `app` repository
@@ -236,7 +241,7 @@ This deploys the app to the Kubernetes cluster with default configurations, crea
 - `ConfigMap` and `Secret` for configuration (placeholders only; no credentials in git)
 - `Deployments` for managing the pods
 - `Services` for internal communication
-- `Ingress` for external access (host: `sms-app.local`)
+- Ingress for external access via NGINX (host: `sms-nginx.local`). Istio hosts are separate: `sms-app.local`, `stable.sms-app.local`, `canary.sms-app.local`.
 - Optional Istio resources (Gateway/VirtualService/DestinationRule) and a hostPath volume for `/mnt/shared/models`
 - Optional monitoring/alerting stack (kube-prometheus-stack) with ServiceMonitors for the app and model through the `/metrics` endpoint, plus a PrometheusRule (>15 req/min for 2 minutes) routed through Alertmanager via SMTP secret
 - Two Grafana dashboards auto-imported via ConfigMaps: Operational (throughput/latency/error) and Experiment (version split, p95 latency, cache hit/miss, model call rate, mirror traffic)
@@ -245,10 +250,12 @@ This deploys the app to the Kubernetes cluster with default configurations, crea
 #### 3.b. Upgrade with Custom Settings
 
 ```bash
+# Create SMTP secret first (for email alerts)
+kubectl create secret generic smtp-credentials -n sms-app --from-literal=password='your-smtp-password'
+
 helm upgrade sms-app ./helm/chart \
   --namespace sms-app \
   --create-namespace \
-  --set secrets.smtpPassword=whatever \
   --set app.image.tag=monitoring \
   --set modelService.image.tag=monitoring \
   --dependency-update \
@@ -270,12 +277,13 @@ helm uninstall sms-app --namespace sms-app
 ```
 
 ### Accessing the Application
+*Default:* NGINX Ingress path at `http://sms-nginx.local`.
 
+*Alternative:*
 #### 1. Forward the Port (for ease of use)
 ```bash
 kubectl port-forward svc/sms-app-app -n sms-app 8080:80
 ```
-
 #### 2. Access the app at [http://localhost:8080/](http://localhost:8080/).
 
 ## Assignment 4 - Traffic Management & Continuous Experimentation
@@ -291,6 +299,9 @@ kubectl port-forward svc/sms-app-app -n sms-app 8080:80
 - Full deployment architecture, request flows, load balancer IPs/hostnames, storage, and routing decision points are described with diagrams in `docs/deployment.md`.
 - Helm usage details (dependencies, `/etc/hosts` setup, port-forward alternatives, monitoring/full-stack/istio/shadow install commands) are in `helm/chart/README.md`.
 - Grafana dashboards are shipped via ConfigMaps in the chart - no manual import required.
+- Extension Report can be found in `docs/extension.md`
+- Continuous Experimentation Report can be found in `docs/continuous-experimentation.md`
+- Deployment Documentation can be found in `docs/deployment.md`
 
 # Run Everything
 
@@ -321,17 +332,25 @@ helm dependency build helm/chart
 
 ## 4. Map hostnames to LB IPs
 ```bash
+# Add NGINX Ingress hostnames
 NGINX_IP=$(kubectl -n ingress-nginx get svc ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+sudo sed -i '/sms-nginx\.local/d;/grafana\.local/d;/dashboard\.local/d' /etc/hosts
+echo "$NGINX_IP sms-nginx.local grafana.local dashboard.local" | sudo tee -a /etc/hosts
+
+# Add Istio Gateway hostnames
 ISTIO_IP=$(kubectl -n istio-system get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-sudo sed -i '/sms-app\.local/d;/stable\.sms-app\.local/d;/canary\.sms-app\.local/d;/grafana\.local/d;/dashboard\.local/d' /etc/hosts
-echo "$NGINX_IP grafana.local dashboard.local"        | sudo tee -a /etc/hosts
+sudo sed -i '/sms-app\.local/d;/stable\.sms-app\.local/d;/canary\.sms-app\.local/d' /etc/hosts
 echo "$ISTIO_IP sms-app.local stable.sms-app.local canary.sms-app.local" | sudo tee -a /etc/hosts
 ```
 
-## 5. Install via Helm (full stack: app+model+monitoring+alerting+Istio+shadow ready)
+## 5. Install via Helm (Full Stack Without Shadow)
+> Note: Shadow mode and canary mode are mutually exclusive.
+
 ```bash
-helm upgrade --install sms-app helm/chart -n sms-app --create-namespace \
-  --set secrets.smtpPassword=changeme \
+kubectl create namespace sms-app --dry-run=client -o yaml | kubectl apply -f -
+kubectl create secret generic smtp-credentials -n sms-app --from-literal=password='your-smtp-password'
+
+helm upgrade --install sms-app helm/chart -n sms-app \
   --set monitoring.enabled=true \
   --set alerting.enabled=true \
   --set kube-prometheus-stack.prometheus.enabled=true \
@@ -341,12 +360,9 @@ helm upgrade --install sms-app helm/chart -n sms-app --create-namespace \
   --set kube-prometheus-stack.nodeExporter.enabled=true \
   --set istio.enabled=true \
   --set app.canary.enabled=true \
-  --set 'istio.hosts[0]=sms-app.local' \
-  --set 'istio.hosts[1]=stable.sms-app.local' \
-  --set 'istio.hosts[2]=canary.sms-app.local' \
-  --set istio.hostRouting.experiment=sms-app.local \
-  --set istio.hostRouting.stable=stable.sms-app.local \
-  --set istio.hostRouting.canary=canary.sms-app.local
+  --set modelService.canary.enabled=true
+
+kubectl label ns sms-app istio-injection=enabled --overwrite
 ```
 
 ## 6. Change canary weight (example: 20% canary / 80% stable)
@@ -357,32 +373,37 @@ helm upgrade sms-app helm/chart -n sms-app \
   --set istio.canary.weights.canary=20
 ```
 
-## 7. Enable shadow launch (mirror model traffic to v2)
+## 7. Enable Shadow Launch
+> Note: Make sure Canary is disabled.
+
 ```bash
-helm upgrade sms-app helm/chart -n sms-app \
-  --reuse-values \
+helm upgrade --install sms-app helm/chart -n sms-app --create-namespace \
+  --set istio.enabled=true \
   --set modelService.shadow.enabled=true \
+  --set modelService.shadow.mirror.enabled=true \
   --set modelService.shadow.mirror.percent=25
 ```
 
 ## 8. Access the app
-- Stable path (Istio canary routing applied): `http://sms-app.local`
-- Force stable only: `http://stable.sms-app.local`
-- Force canary: `http://canary.sms-app.local`
-- NGINX ingress path (non-Istio): `http://sms-app.local` via NGINX if Istio disabled
+- NGINX ingress path (non-Istio): `http://sms-nginx.local`
+- Istio Experiment (90/10 + Sticky): `http://sms-app.local`
+- Force Stable: `http://stable.sms-app.local`
+- Force Canary: `http://canary.sms-app.local`
 
 ## 9. Observability quick access
 ```bash
-# Grafana
-kubectl port-forward -n sms-app svc/sms-app-kube-prometheus-st-grafana 3000:80
+# App
+kubectl port-forward svc/sms-app-app 8080:80 -n sms-app
+
 # Prometheus
 kubectl port-forward -n sms-app svc/sms-app-kube-prometheus-st-prometheus 9090:9090
+
 # Alertmanager
 kubectl port-forward -n sms-app svc/sms-app-kube-prometheus-st-alertmanager 9093:9093
 ```
-Grafana dashboards are auto-imported; login default (if unchanged by values) is `admin/admin`.
+Grafana dashboards are auto-imported; login default (if unchanged by values) is `admin/admin` at `grafana.local`.
 
-## 10. Tear down
+## 10. Uninstall
 ```bash
 helm uninstall sms-app -n sms-app
 vagrant destroy -f   # from vm/ if you want to remove VMs
