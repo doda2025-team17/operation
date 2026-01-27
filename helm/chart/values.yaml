@@ -30,7 +30,7 @@ app:
 
   # Canary deployment settings
   canary:
-    enabled: true # Set to true for canary deployment
+    enabled: false # Set to true for canary deployment
     replicaCount: 1
     versionLabel: v2 # Version label for canary deployment
     image:
@@ -69,7 +69,7 @@ modelService:
 
   # Canary deployment settings
   canary:
-    enabled: true # Set to true for canary deployment
+    enabled: false # Set to true for canary deployment
     replicaCount: 1
     versionLabel: v2 # Version label for canary deployment
     image:
