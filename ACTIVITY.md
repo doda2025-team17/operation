@@ -89,7 +89,7 @@ No work.
 
 ### Kristian
 
-- Helped with the testing of the fixes for module-service.
+- Helped with the testing of the fixes for model-service.
 - Reviewed PRs of my teammates.
 - Spent a lot of time trying to fix my WSL setup.
 - Started working on the Monitoring task.
@@ -258,6 +258,8 @@ No work.
 ### Arnav
 
 ### Kristian
+- Completed my slides of the presentation
+- Finalized the documentation: PR [#90](https://github.com/doda2025-team17/operation/pull/90).
 
 ### Ana
 
