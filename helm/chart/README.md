@@ -180,10 +180,133 @@ http://localhost:9090
 sum by (version,source) (rate(sms_model_predictions_total{namespace="sms-app"}[1m]))
 ```
 
+### Experiment - Canary Deployment + Traffic Generation
+This experiment demonstrates:
+
+- App v1 (stable) and App v2 (canary) running simultaneously
+- Istio weighted routing (90% → v1, 10% → v2)
+- Metrics collection in Grafana / Prometheus
+- Load generation for validating behavior
+
+#### Step 1 – Start the Cluster
+
+From the `operation/vm` directory:
+
+```bash
+vagrant up
+```
+
+#### Step 2 – Configure kubectl and Secrets
+From the operation root folder:
+```bash
+export KUBECONFIG=$PWD/vm/kubeconfig
+
+kubectl create ns sms-app --dry-run=client -o yaml | kubectl apply -f -
+
+kubectl -n sms-app create secret generic smtp-credentials \
+  --from-literal=SMTP_PASSWORD=dummy \
+  --dry-run=client -o yaml | kubectl apply -f -
+```
+
+#### Step 3 – Deploy Helm (Canary + Monitoring + Istio)
+```bash
+kubectl label ns sms-app istio-injection=disabled --overwrite
+
+helm upgrade --install sms-app helm/chart -n sms-app --create-namespace \
+  --set istio.enabled=true \
+  --set monitoring.enabled=true \
+  --set alerting.enabled=true \
+  --set kube-prometheus-stack.prometheus.enabled=true \
+  --set kube-prometheus-stack.alertmanager.enabled=true \
+  --set kube-prometheus-stack.grafana.enabled=true \
+  --set kube-prometheus-stack.kubeStateMetrics.enabled=true \
+  --set kube-prometheus-stack.nodeExporter.enabled=true \
+  --set app.canary.enabled=true \
+  --set modelService.canary.enabled=true \
+  --set app.image.tag=1.0.5 \
+  --set app.canary.image.tag=1.0.6 \
+  --set modelService.image.tag=1.0.2 \
+  --set modelService.canary.image.tag=1.0.3 \
+  --set istio.canary.weights.stable=90 \
+  --set istio.canary.weights.canary=10 \
+  --wait --timeout 15m
+
+kubectl label ns sms-app istio-injection=enabled --overwrite
+```
+
+#### Step 4 – Verify Pods Are Running
+```bash
+kubectl -n sms-app get pods -w
+```
+
+#### Step 5 – Port Forward Services
+Terminal 1 – App v1
+```bash
+kubectl -n sms-app port-forward deploy/sms-app-app 8081:8080
+```
+
+Terminal 2 – App v2
+```bash
+kubectl -n sms-app port-forward deploy/sms-app-app-canary 8082:8080
+```
+
+Terminal 3 – Grafana
+```bash
+kubectl -n sms-app port-forward svc/sms-app-grafana 3000:80
+```
+
+#### Step 6 – Generate Traffic
+Terminal 4 - Hit App v1
+```bash
+for i in {1..200}; do
+  curl -s -X POST http://localhost:8081/sms \
+    -H "Content-Type: application/json" \
+    -d '{"sms":"repeat-this-sms"}' > /dev/null &
+done
+wait
+```
+
+Terminal 5 - Hit App v2
+```bash
+for i in {1..200}; do
+  curl -s -X POST http://localhost:8082/sms \
+    -H "Content-Type: application/json" \
+    -d '{"sms":"repeat-this-sms"}' > /dev/null &
+done
+wait
+```
+
+#### Step 7 – Observe Metrics in Grafana
+Open Grafana UI:
+http://localhost:3000
+
+Navigate to:
+```bash
+Dashboards → SMS App → Continuous Experimentation (App v1 vs v2)
+```
+
+You should observe:
+- Cache Hits / Misses 
+- Model Calls per version 
+- Latency comparison 
+- Request volume per version 
+- Cache hit ratio differences
+
+This confirms:
+- v2 cache logic is active
+- Metrics are labeled correctly by version
+- Canary behavior is observable
+
 ## Uninstall
 
 ```bash
 helm uninstall sms-app --namespace sms-app
+```
+
+#### Notes
+If you get a connection error in a new terminal, run this in that terminal:
+```bash
+export KUBECONFIG=$PWD/vm/kubeconfig
 ```
 
 ## Delete Secret
