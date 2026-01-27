@@ -130,7 +130,6 @@ helm upgrade --install sms-app helm/chart -n sms-app \
   --set kube-prometheus-stack.alertmanager.enabled=true \
   --set kube-prometheus-stack.grafana.enabled=true \
   --set kube-prometheus-stack.kubeStateMetrics.enabled=true \
-
   --set kube-prometheus-stack.nodeExporter.enabled=true \
   --set istio.enabled=true \
   --set app.canary.enabled=true \
